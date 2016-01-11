@@ -68,7 +68,6 @@
             if(obj.type=="BridgeDataTable"){
                 // Entend defaults into the configuration
                 obj=$.extend( {}, defaultsBridgeDataTable, obj );
-                obj=$.extend( {}, defaultSDRTable, obj );
                 // Create a table element for Datatables and add to DOM
 				obj=initResultsElement(obj);  
             }
