@@ -190,9 +190,9 @@
 					// Iterate through the data configuration of the search object
 					$.each(configObj.data, function( k, v ){
 						// Check for Bridge Search response that correlates to the key
-						if (typeof response.records[0].attributes[k] != "undefined"){
+						if (typeof configObj.records[0].attributes[k] != "undefined"){
 							// Set objVal to the value resturned by the bridge
-							var objVal = response.records[0].attributes[k];
+							var objVal = configObj.records[0].attributes[k];
 						}
 						else{
 							var objVal = '';
