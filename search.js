@@ -1,12 +1,22 @@
+/**
+KD Search RE Edition
+
+**Completed 1/13/2016 Brian Peterson
+-Validate conistent use of success callback configured in the search
+	-Modified naming convention of callbacks (before, success, success_empty, error, complete)
+-Change ucFirst to public function to replicate code in CE version
+-Update Namespace to KDSearch to prevent being overwritten by Core Request Code
+
+**TODO
+-Update List function to match the CE version
+
+
+**/
 (function($) {
-    // Ensure the KINETIC global object exists
-    KD = KD || {};
-    // Create the utils namespace
-    KD.utils = KD.utils || {};
-    // Create the service items namespace
-    KD.search = KD.search || {};
+    // create the KDSearch global object
+    KDSearch = typeof KDSearch == "undefined" ? {} : KDSearch;
     // Create a scoped alias to simplify references
-    var search = KD.search;
+    var search = KDSearch;
    
     /**
      * Define default properties for the Search configurations
@@ -141,8 +151,6 @@
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
         //create the connector necessary to connect to the bridge
         var connector = new KD.bridges.BridgeConnector({templateId: templateId});
-		// Run the configured afterInit function
-        if(configObj.afterInit){configObj.afterInit();}
 		connector.search(configObj.bridgeConfig.model, configObj.bridgeConfig.qualification_mapping, {
 			parameters: parameters,
 			attributes: configObj.bridgeConfig.attributes,
@@ -150,64 +158,73 @@
 				configObj.dataArray = [];
 				//Retrieve Records
 				configObj.records=response.records;
-				// More than 1 record returned
-				if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult || (configObj.records.length > 1 && configObj.records != null)){    
-					//Iterate through row results to retrieve data
-					$.each(configObj.records, function(i,record){
-						var obj = {};
-						//Iterate through the configured columns to match with data returned from bridge
-						$.each(configObj.data, function(attribute, attributeObject){
-							if (typeof record.attributes[attribute] != "undefined"){
-								if (attributeObject["date"] == true && typeof attributeObject["moment"] != "undefined") {
-									var attributeValue = moment(record.attributes[attribute]).format(attributeObject["moment"]);
-								} else {
-									var attributeValue = record.attributes[attribute];
-								}
+				if(configObj.records.length > 0 || !configObj.success_empty){
+					// Execute success callback
+					if(configObj.success){configObj.success();}
+					// Only one record returned
+					if(typeof configObj.processSingleResult != "undefined" && configObj.processSingleResult && configObj.records.length == 1){
+						// TODO: can this code be placed into a function and also used with performBridgeRequestSingle.  Note: response is different
+						// in each scenario and will need to be accounted for in the code.
+						var resultsObj = {};
+						// Iterate through the data configuration of the search object
+						$.each(configObj.data, function( k, v ){
+							// Check for Bridge Search response that correlates to the key
+							if (typeof configObj.records[0].attributes[k] != "undefined"){
+								// Set objVal to the value resturned by the bridge
+								var objVal = configObj.records[0].attributes[k];
 							}
 							else{
-								var attributeValue = '';
+								var objVal = '';
 							}
-							obj[attribute] = attributeValue;
+							resultsObj[k] = objVal;
 						});
-						configObj.dataArray.push(obj);
-
-					});
-					// Append Column to beginning of table contain row expansion for responsive Plugin
-					if(configObj.responsive){
-						configObj.columns.unshift({
-							defaultContent: '',
-							className: 'control',
-							orderable: false,
-						});
+						setValuesFromResults(configObj.data, resultsObj);
+						if(configObj.clickCallback){configObj.clickCallback(resultsObj);}
 					}
-					// Create DataTable Object.
-					createDataTable(configObj);
-				}
-				// Only one record returned
-				else if(typeof configObj.processSingleResult != "undefined" && configObj.processSingleResult && configObj.records.length == 1 && configObj.records != null){
-					// TODO: can this code be placed into a function and also used with performBridgeRequestSingle.  Note: response is different
-					// in each scenario and will need to be accounted for in the code.
-					var resultsObj = {};
-					// Iterate through the data configuration of the search object
-					$.each(configObj.data, function( k, v ){
-						// Check for Bridge Search response that correlates to the key
-						if (typeof response.records[0].attributes[k] != "undefined"){
-							// Set objVal to the value resturned by the bridge
-							var objVal = response.records[0].attributes[k];
+					// More than 1 record returned
+					else if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult ||configObj.records.length > 1){    
+						//Iterate through row results to retrieve data
+						$.each(configObj.records, function(i,record){
+							var obj = {};
+							//Iterate through the configured columns to match with data returned from bridge
+							$.each(configObj.data, function(attribute, attributeObject){
+								if (typeof record.attributes[attribute] != "undefined"){
+									if (attributeObject["date"] == true && typeof attributeObject["moment"] != "undefined") {
+										var attributeValue = moment(record.attributes[attribute]).format(attributeObject["moment"]);
+									} else {
+										var attributeValue = record.attributes[attribute];
+									}
+								}
+								else{
+									var attributeValue = '';
+								}
+								obj[attribute] = attributeValue;
+							});
+							configObj.dataArray.push(obj);
+
+						});
+						// Append Column to beginning of table contain row expansion for responsive Plugin
+						if(configObj.responsive){
+							configObj.columns.unshift({
+								defaultContent: '',
+								className: 'control',
+								orderable: false,
+							});
 						}
-						else{
-							var objVal = '';
-						}
-						resultsObj[k] = objVal;
-					});
-					setValuesFromResults(configObj.data, resultsObj);
+						// Create DataTable Object.
+						createDataTable(configObj);
+					}
 				}
 				// No records returned
 				else{
-					if(configObj.noResults){configObj.noResults();}
+					if(configObj.success_empty){configObj.success_empty();}
 				}
-				if(configObj.success){configObj.success();}
+				if(configObj.complete){configObj.complete();}
 			},
+			error: function(response) {
+				if(configObj.error){configObj.error();}
+				if(configObj.complete){configObj.complete();}
+			}
 		}); 													
     }	
 
@@ -247,8 +264,11 @@
 			attributes: configObj.bridgeConfig.attributes,
 			//TODO: Move Success into object configuration????  Does it make sense?
 			success: function(response) {
-				//if(configObj.records.length > 0 && configObj.records != null){ 
-				if(response.attributes != null){
+				//Retrieve Records
+				configObj.records=response.attributes;
+				if(response.attributes != null || !configObj.success_empty){
+					// Execute success callback
+					if(configObj.success){configObj.success();}
 					configObj.dataArray = [];
 					var obj = {};
 					// Iterate through the data configuration of the search object
@@ -273,14 +293,17 @@
 						obj[k] = objVal;
 					});
 					configObj.dataArray.push(obj);
-					configObj.loadedcallback();
 				}
 				else{
-					configObj.noResults();
-				}    
+					if(configObj.success_empty){configObj.success_empty();}
+				}
+				if(configObj.complete){configObj.complete();}
 			},
+			error: function(response){
+				if(configObj.error){configObj.error();}
+				if(configObj.complete){configObj.complete();}
+			}
 		});
-    configObj.done();
     }
 
     /**
@@ -304,8 +327,6 @@
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
         //create the connector necessary to connect to the bridge
         var connector = new KD.bridges.BridgeConnector({templateId: templateId});
-        // Run the configured afterInit function
-        if(configObj.afterInit){configObj.afterInit();}
 		connector.search(configObj.bridgeConfig.model, configObj.bridgeConfig.qualification_mapping, {
             parameters: parameters,
             attributes: configObj.bridgeConfig.attributes,
@@ -314,7 +335,9 @@
                     var self = this; // reference to this in current scope
                     //Retrieve Records
                     configObj.records=response.records;
-                    if(configObj.records.length > 0 && configObj.records != null){
+					if(configObj.records.length > 0 || !configObj.success_empty){
+						// Execute success callback
+						if(configObj.success){configObj.success();}
 						//Iterate through row results to retrieve data
                         $.each(configObj.records, function(i,record){
 							self.$singleResult = $("<li id='result'>");
@@ -346,18 +369,21 @@
 //						var name = filtersearchConfigByName(configObj);    
 //						this.$resultsList.data('name',name);
 						configObj.appendTo.empty().append(this.$resultsList);
-						configObj.appendTo.on( "click", 'li', function(event){
+						configObj.appendTo.off().on( "click", 'li', function(event){
 							setValuesFromResults(configObj.data, $(this).data());
 							if(configObj.clickCallback){configObj.clickCallback($(this).data());};
 						});
+						if(configObj.complete){configObj.complete();}
                     }
 					else{
-						configObj.noResults();
+						if(configObj.success_empty){configObj.success_empty();}
 					} 
-                    configObj.loadedcallback();
                 },
+				error: function(response){
+					if(configObj.error){configObj.error();}
+					if(configObj.complete){configObj.complete();}
+				}
             }); 
-        configObj.done(self.$resultsDiv);
     }
     
     /**
@@ -376,86 +402,83 @@
 		else if(typeof configObj.sdrConfig.params == "string"){
 			var params = configObj.sdrConfig.params;
 		}
-		// Run the configured afterInit function
-        if(configObj.afterInit){configObj.afterInit();}
         //    Define a callback that will call the custom populateUserTable function on success, or alert on failure. 
         var connection=new KD.utils.Callback(function(response){
             configObj.dataArray = [];
             //Retrieve Records
             configObj.records=KD.utils.Action.getMultipleRequestRecords(response);
+			if(configObj.records.length > 0 || !configObj.success_empty){
+			// Execute success callback
+			if(configObj.success){configObj.success();}
             // More than 1 record returned
-			if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult || (configObj.records.length > 1 && configObj.records != null)){    
-                //Loop through row results to retrieve data
-                $.each(configObj.records, function(i,record){
-                    var obj = {};
-                    $.each(configObj.columns, function( j, v ){
-                        var objKey = v["data"];
-                        if (typeof KD.utils.Action.getRequestValue(record, objKey) != "undefined"){
-                            if (v["date"] == true && typeof v["moment"] != "undefined") {
-                                var objVal = moment(KD.utils.Action.getRequestValue(record, objKey)).format(v["moment"]);
-                            } else {
-                                var objVal = KD.utils.Action.getRequestValue(record, objKey);
-                            }
-                        }
-                        else{
-                            var objVal = '';
-                        }
-                        obj[objKey] = objVal;
-                    });
-                    configObj.dataArray.push(obj);
-                });
-				// Append Column to beginning of table contain row expansion for responsive Plugin
-				if(configObj.responsive){
-					configObj.columns.unshift({
-						defaultContent: '',
-						className: 'control',
-						orderable: false,
+				if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult || (configObj.records.length > 1 && configObj.records != null)){    
+					//Loop through row results to retrieve data
+					$.each(configObj.records, function(i,record){
+						var obj = {};
+						$.each(configObj.columns, function( j, v ){
+							var objKey = v["data"];
+							if (typeof KD.utils.Action.getRequestValue(record, objKey) != "undefined"){
+								if (v["date"] == true && typeof v["moment"] != "undefined") {
+									var objVal = moment(KD.utils.Action.getRequestValue(record, objKey)).format(v["moment"]);
+								} else {
+									var objVal = KD.utils.Action.getRequestValue(record, objKey);
+								}
+							}
+							else{
+								var objVal = '';
+							}
+							obj[objKey] = objVal;
+						});
+						configObj.dataArray.push(obj);
 					});
+					// Append Column to beginning of table contain row expansion for responsive Plugin
+					if(configObj.responsive){
+						configObj.columns.unshift({
+							defaultContent: '',
+							className: 'control',
+							orderable: false,
+						});
+					}
+					// Create DataTable Object.
+					createDataTable(configObj);
 				}
-				// Create DataTable Object.
-				createDataTable(configObj);
-            }
-            // Only one record returned
-			else if(typeof configObj.processSingleResult != "undefined" && configObj.processSingleResult && configObj.records.length == 1 && configObj.records != null){
-				// TODO: can this code be placed into a function and also used with performBridgeRequestSingle.  Note: response is different
-				// in each scenario and will need to be accounted for in the code.
-				var resultsObj = {};
-				// Iterate through the data configuration of the search object
-				$.each(configObj.records, function(i,record){
-                    var obj = {};
-                    $.each(configObj.columns, function( j, v ){
-                        var objKey = v["data"];
-                        if (typeof KD.utils.Action.getRequestValue(record, objKey) != "undefined"){
-                            if (v["date"] == true && typeof v["moment"] != "undefined") {
-                                var objVal = moment(KD.utils.Action.getRequestValue(record, objKey)).format(v["moment"]);
-                            } else {
-                                var objVal = KD.utils.Action.getRequestValue(record, objKey);
-                            }
-                        }
-                        else{
-                            var objVal = '';
-                        }
-                        resultsObj[objKey] = objVal;
-                    });
-                });
-				setValuesFromResults(configObj.data, resultsObj);
+				// Only one record returned
+				else if(typeof configObj.processSingleResult != "undefined" && configObj.processSingleResult && configObj.records.length == 1 && configObj.records != null){
+					// TODO: can this code be placed into a function and also used with performBridgeRequestSingle.  Note: response is different
+					// in each scenario and will need to be accounted for in the code.
+					var resultsObj = {};
+					// Iterate through the data configuration of the search object
+					$.each(configObj.records, function(i,record){
+						var obj = {};
+						$.each(configObj.columns, function( j, v ){
+							var objKey = v["data"];
+							if (typeof KD.utils.Action.getRequestValue(record, objKey) != "undefined"){
+								if (v["date"] == true && typeof v["moment"] != "undefined") {
+									var objVal = moment(KD.utils.Action.getRequestValue(record, objKey)).format(v["moment"]);
+								} else {
+									var objVal = KD.utils.Action.getRequestValue(record, objKey);
+								}
+							}
+							else{
+								var objVal = '';
+							}
+							resultsObj[objKey] = objVal;
+						});
+					});
+					setValuesFromResults(configObj.data, resultsObj);
+					if(configObj.clickCallback){configObj.clickCallback(resultsObj);}
+				}
 			}
 			else{
-                if(configObj.noResults){configObj.noResults();};
+                if(configObj.success_empty){configObj.success_empty();};
             }
-			if(configObj.success){configObj.success();};
-        }); 
+			if(configObj.complete){configObj.complete();};
+        },function(response){
+			if(configObj.complete){configObj.complete();}
+			if(configObj.error){configObj.error();}
+		}); 
         // Make an Asynchronous SDR request. 
         KD.utils.Action.makeAsyncRequest(sdrName, SDRId, connection, params, '', false);
-    }
-
-    /**
-     * Returns string with uppercase first letter
-     * @param {String} Value to be give uppercase letter
-     */
-    function ucFirst(str){
-        var firstLetter = str.substr(0, 1);
-        return firstLetter.toUpperCase() + str.substr(1);
     } 
     
     /**
@@ -550,7 +573,6 @@
 // Commented out after changing how initalization was performed
 //		var name = filtersearchConfigByName(configObj);
 //		$('#'+configObj.tableId).data('name',name);
-		if(configObj.loadedcallback){configObj.loadedcallback();}
 		// Bind Click Event based on where the select attribute extists ie:<tr> or <td>
 		$('#'+configObj.tableId).off().on( "click", 'td', function(event){
 			// Ensure user has not clicked on an element with control class used by the responsive plugin to expand info
@@ -571,4 +593,17 @@
 			}
 		});
 	}
+	
+	/****************************************************************************
+								PUBlIC FUNCTIONS							   
+	****************************************************************************/
+	
+	/**
+     * Returns string with uppercase first letter
+     * @param {String} Value to be give uppercase letter
+     */
+    search.ucFirst = function(str){
+        var firstLetter = str.substr(0, 1);
+        return firstLetter.toUpperCase() + str.substr(1);
+    }
 })(jQuery);

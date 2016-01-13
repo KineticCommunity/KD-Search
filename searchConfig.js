@@ -7,8 +7,10 @@ function toggleUnclickable(o){
 }
 	
 function loadSearch() {
-KD.search.executeSearch(searchConfig.defaultRequestedFor);
-KD.search.executeSearch(searchConfig.defaultContact);
+KDSearch.executeSearch(searchConfig.defaultRequestedFor);
+KDSearch.executeSearch(searchConfig.defaultContact);
+KDSearch.executeSearch(searchConfig.defaultListContact);
+
 
 }
 
@@ -25,18 +27,18 @@ The data attribute is used to indicate which searchConfig is used to search for 
 $(document).on('keypress', '.search-container:not(.unclickable) .someoneelse input',function(e) {
 	if(e.which == 13) {
 		searchConfigObj = searchConfig[$(this).closest('.search-btn').data('searchconfig')];
-		KD.search.executeSearch(searchConfigObj);
+		KDSearch.executeSearch(searchConfigObj);
 	}
 });
 //Click on search icon (Not clickable if 'unclickable' class is set in before function.)
 $(document).on('click', '.search-container:not(.unclickable) .fa-search', function(){
 	searchConfigObj = searchConfig[$(this).closest('.search-btn').data('searchconfig')];
-	KD.search.executeSearch(searchConfigObj);
+	KDSearch.executeSearch(searchConfigObj);
 });
 //Click on Myself (Not clickable if 'unclickable' class is set in before function.)
 $(document).on('click', '.search-container:not(.unclickable) .search-btn:not(.active).myself', function(){
 	searchConfigObj = searchConfig[$(this).closest('.search-btn').data('searchconfig')];
-	KD.search.executeSearch(searchConfigObj);
+	KDSearch.executeSearch(searchConfigObj);
 });
 
 //Bind events to toggle active class to disable elements while search is performing.
@@ -49,7 +51,7 @@ $(document).on('click', '.search-container:not(.unclickable) .search-btn:not(.ac
 		// if the searchconfig data attribute is set on the element and the button is currently active.
 /*			if(searchBtn.data('searchconfig') && searchBtn.hasClass('active')){
 			//Loop through each of question elements configured in the column obj and clear it to prep for new values
-			$.each(KD.search.searchConfig[searchBtn.data('searchconfig')].data, function(attribute, attributeObject){
+			$.each(KDSearch.searchConfig[searchBtn.data('searchconfig')].data, function(attribute, attributeObject){
 				if(attributeObject.setQstn){
 					KD.utils.Action.setQuestionValue(attributeObject.setQstn, "");
 				}
@@ -161,25 +163,21 @@ searchConfig ={
 		// table : function(){return ($('<table>', {'cellspacing':'0', 'border':'0', 'class': 'test2 display'})).attr('id',this.tableId);},
 		//ID to give the table when creating it.
 		tableId: 'requestedForTable',
-		//After the Table has been created.
-		afterInit: function(){ //completeCallback
-		},
 		before: function(){ //before search
 			toggleUnclickable($('#requested_for'));
 		},
-		// After Table Load
-		loadedcallback: function(){
+		success: function (){
 			togglePanel(this);
 		},
-		//Define action to take place after SDR is complete.
-		success: function (){
-			toggleUnclickable($('#requested_for'));
-		},
-		noResults: function(){
+		success_empty: function(){
 			alert("No results Found");
+		},
+		error: function(){
 			toggleUnclickable($('#requested_for'));
 		},
-		// Executes on click of element with class of select
+		complete: function(){
+			toggleUnclickable($('#requested_for'));
+		},
 		clickCallback: function(results){
 			$('#requested_for input').val(results["First Name"]+ ' ' + results["Last Name"]);
 			togglePanel(this);
@@ -233,24 +231,24 @@ searchConfig ={
 		},
 		appendTo: $('div.search-slide'),
 		tableId: 'contactTable',
-		afterInit: function(){ //completeCallback
-		},
 		before: function(){ //before search
 			toggleUnclickable($('#contact'));
 		},
-		loadedcallback: function(){
+		success: function (){
 			togglePanel(this);
 		},
-		done: function (){
-		},
-		noResults: function(){
+		success_empty: function(){
 			alert("No results Found");
+		},
+		error: function(){
+			toggleUnclickable($('#contact'));
+		},
+		complete: function(){
 			toggleUnclickable($('#contact'));
 		},
 		clickCallback: function(results){
 				$('#contact input').val(results["First Name"]+ ' ' + results["Last Name"]);
 				$('#contact_search a').find('i').removeClass('fa-spinner fa-pulse').addClass('fa-search');
-				toggleUnclickable($('#contact'));
 				togglePanel(this);
 		},
 		createdRow: function ( row, data, index ) {
@@ -286,15 +284,17 @@ searchConfig ={
 				setQstn:"ReqFor_Phone",
 			}
 		},
-		before: function(){
+		before: function(){ //before search
 		},
-		loadedcallback: function(){
+		success: function (){
 		},
-		done: function (){
-		},
-		noResults: function(){
+		success_empty: function(){
 			alert("No results Found");
-		}
+		},
+		error: function(){
+		},
+		complete: function(){
+		},
 	},
 	defaultContact:{
 		runAtInitialization: true,
@@ -322,17 +322,16 @@ searchConfig ={
 				setQstn:"Contact_Phone",
 			}
 		},
-		before: function(){
-			toggleUnclickable($('#contact'));
+		before: function(){ //before search
 		},
-		loadedcallback: function(){
-			toggleUnclickable($('#contact'));
+		success: function (){
 		},
-		done: function(){	
-		},
-		noResults: function(){
+		success_empty: function(){
 			alert("No results Found");
-			toggleUnclickable($('#contact'));
+		},
+		error: function(){
+		},
+		complete: function(){
 		},
 	},
 	listContact:{
@@ -374,24 +373,25 @@ searchConfig ={
 			},
 		},
 		appendTo: '#list-contact-results',
-		afterInit: function(){ //completeCallback
-		},
 		before: function(){
 			toggleUnclickable($('#list-contact'));
 		},
-		loadedcallback: function(){
+		success: function (){
 			this.appendTo.show("blind", "swing", 1000);
+		},
+		success_empty: function(){
+			alert("No results Found");
+		},
+		error: function(){
 			toggleUnclickable($('#list-contact'));
 		},
-		done: function(){
+		complete: function(){
+			toggleUnclickable($('#list-contact'));
 		},
 		clickCallback: function(results){
 				$('#list-contact .someoneelse input').val(results["First Name"]+ ' ' + results["Last Name"]);
 				this.appendTo.hide("blind", "swing", 1000);
 		},
-		noResults: function(){
-			alert("No results Found")
-		}
 	},
 	defaultListContact:{
 		runAtInitialization: true,
@@ -412,15 +412,17 @@ searchConfig ={
 		before: function(){
 			toggleUnclickable($('#list-contact'));
 		},
-		loadedcallback: function(){
-			toggleUnclickable($('#list-contact'));
+		success: function (){
 		},
-		done: function(){	
-		},
-		noResults: function(){
+		success_empty: function(){
 			alert("No results Found");
+		},
+		error: function(){
 			toggleUnclickable($('#list-contact'));
-		}
+		},
+		complete: function(){
+			toggleUnclickable($('#list-contact'));
+		},
 	},
 	requestedForSDRTableConfig:{
 		//type: "BridgeDataTable" or "BridgeList".  Determines default values to be used and behavior.
@@ -462,35 +464,21 @@ searchConfig ={
 		appendTo: function(){return $('#SDR_requested_for');},
 		//ID to give the table when creating it.
 		tableId: 'SDRRequestedForTable',
-		//After the Table has been created.
-		afterInit: function(){ //completeCallback	
+		before: function(){
 		},
-		before: function(){ //before search
-//			toggleUnclickable($('#requested_for'));
-//			$('#requested_for input').val($('#requested_for input').val().toLowerCase());
+		success: function (){
 		},
-		// After Table Load
-		loadedcallback: function(){
-			//togglePanel(this);
+		success_empty: function(){
+			alert("No results Found");
 		},
-		//Define action to take place after SDR is complete.
-		done: function (){
+		error: function(){
 		},
-		noResults: function(){
-			alert('No results Found');
-//			toggleUnclickable($('#requested_for'));
-		},
-		// Executes on click of element with class of select
-		clickCallback: function(results){
-//				$('#requested_for input').val(results["First Name"]+ ' ' + results["Last Name"]);
-//				toggleUnclickable($('#requested_for'));
-				//togglePanel(event.data.value);
+		complete: function(){
 		},
 		createdRow: function ( row, data, index ) {
-			// Add select class to Row.  The class is used to trigger selection of row.
-			$(row).addClass('select');
 		},
-
+		clickCallback: function(results){
+		},
 	}
 };
 
