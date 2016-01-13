@@ -46,7 +46,7 @@ KD Search RE Edition
     /* Define default properties for defaultsBridgeList object. */
     var defaultsBridgeList = {
         execute: performBridgeRequestList,
-		resultsElement : '<div id="results">',
+		resultsElement : '<div>',
     };
     
     /* Define default properties for defaultsBridgeGetSingle object. */
@@ -78,7 +78,6 @@ KD Search RE Edition
             if(obj.type=="BridgeDataTable"){
                 // Entend defaults into the configuration
                 obj=$.extend( {}, defaultsBridgeDataTable, obj );
-                obj=$.extend( {}, defaultSDRTable, obj );
                 // Create a table element for Datatables and add to DOM
 				obj=initResultsElement(obj);  
             }
@@ -103,14 +102,13 @@ KD Search RE Edition
     
     /**
      * Executes the search for the configured search object.
-     * @param {String} Name of search configuration object.
+     * @param {Obj} Search configuration object.
 	 * @param {Ojb} Configuration object to over ride first param.
      */
-    //TODO: modify to accept obj as first param
-	search.executeSearch = function(name, config) {
-		name = search.initialize(name);
-		if(name.execute){
-			var configObj=$.extend( true, {}, name, config );
+	search.executeSearch = function(searchObj1, searchObj2) {
+		searchObj1 = search.initialize(searchObj1);
+		if(searchObj1.execute){
+			var configObj=$.extend( true, {}, searchObj1, searchObj2 );
 			configObj.execute();
 		}	
     };
