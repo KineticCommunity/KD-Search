@@ -2,10 +2,7 @@
 KD Search RE Edition
 
 **Completed 1/13/2016 Brian Peterson
--Validate conistent use of success callback configured in the search
-	-Modified naming convention of callbacks (before, success, success_empty, error, complete)
--Change ucFirst to public function to replicate code in CE version
--Update Namespace to KDSearch to prevent being overwritten by Core Request Code
+- Minor changes to create consistency with CE Version
 
 **TODO
 -Update List function to match the CE version
