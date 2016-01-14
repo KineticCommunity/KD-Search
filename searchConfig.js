@@ -83,7 +83,7 @@ togglePanel = function(configObj){
 			previousScrollTop = $(window).scrollTop();
 			currentScrollTop = '-' + $(window).scrollTop() + 'px';
 			$(':focus').blur();
-			$('#'+configObj.tableId).parents('div.dataTables_wrapper').first().show();
+			$('#'+configObj.resultsContainerId).parents('div.dataTables_wrapper').first().show();
 			// Disable click events on content wrap
 			$(contentSlide).find('div.pointer-events').css({'pointer-events':'none'});
 			$(contentSlide).find('header.main, header.sub').css({'left': '100%'});
@@ -99,12 +99,12 @@ togglePanel = function(configObj){
 				event.stopImmediatePropagation();
 				search.firstToggleClick = true;
 				BUNDLE.common.resetDisplay(this, configObj.appendTo, previousScrollTop); 
-				$('#'+configObj.tableId).parents('div.dataTables_wrapper').first().hide();
+				$('#'+configObj.resultsContainerId).parents('div.dataTables_wrapper').first().hide();
 			});
 		} else {
 			search.firstToggleClick = true;
 			BUNDLE.common.resetDisplay(contentSlide, configObj.appendTo, previousScrollTop);  
-			$('#'+configObj.tableId).parents('div.dataTables_wrapper').first().hide();
+			$('#'+configObj.resultsContainerId).parents('div.dataTables_wrapper').first().hide();
 		}
 	
 }
@@ -160,9 +160,9 @@ searchConfig ={
 		appendTo: function(){return $('div.search-slide');},
 		// OPTIONAL: Create Table function or string to become jQuery obj
 		// table : '<table cellspacing="1", border="1", class="display test">',
-		// table : function(){return ($('<table>', {'cellspacing':'0', 'border':'0', 'class': 'test2 display'})).attr('id',this.tableId);},
+		// table : function(){return ($('<table>', {'cellspacing':'0', 'border':'0', 'class': 'test2 display'})).attr('id',this.resultsContainerId);},
 		//ID to give the table when creating it.
-		tableId: 'requestedForTable',
+		resultsContainerId: 'requestedForTable',
 		before: function(){ //before search
 			toggleUnclickable($('#requested_for'));
 		},
@@ -230,7 +230,7 @@ searchConfig ={
 			}
 		},
 		appendTo: $('div.search-slide'),
-		tableId: 'contactTable',
+		resultsContainerId: 'contactTable',
 		before: function(){ //before search
 			toggleUnclickable($('#contact'));
 		},
@@ -463,7 +463,7 @@ searchConfig ={
 		//appendTo: '#SDR_requested_for',
 		appendTo: function(){return $('#SDR_requested_for');},
 		//ID to give the table when creating it.
-		tableId: 'SDRRequestedForTable',
+		resultsContainerId: 'SDRRequestedForTable',
 		before: function(){
 		},
 		success: function (){
