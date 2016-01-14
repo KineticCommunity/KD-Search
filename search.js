@@ -17,8 +17,8 @@ KD Search RE Edition
 
 **/
 (function($) {
-    // Ensure the KINETIC global object exists
-    KDSearch = typeof KDSearch == "undefined" ? {} : KDSearch;
+    // createcreate the KDSearch global object
+	KDSearch = typeof KDSearch == "undefined" ? {} : KDSearch;
     // Create a scoped alias to simplify references
     var search = KDSearch;
    
@@ -50,7 +50,7 @@ KD Search RE Edition
     /* Define default properties for defaultsBridgeList object. */
     var defaultsBridgeList = {
         execute: performBridgeRequestList,
-		resultsContainer : '<div id="results">',
+		resultsContainer : '<div">',
     };
     
     /* Define default properties for defaultsBridgeGetSingle object. */
@@ -96,7 +96,6 @@ KD Search RE Edition
             if(obj.type=="BridgeDataTable"){
                 // Entend defaults into the configuration
                 obj=$.extend( {}, defaultsBridgeDataTable, obj );
-                obj=$.extend( {}, defaultSDRTable, obj );
                 // Create a table element for Datatables and add to DOM
 				obj=initializeResultsContainer(obj);  
             }
