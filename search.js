@@ -3,17 +3,12 @@ KD Search RE Edition
 
 **Completed 1/14/2016 Brian Peterson
 
-- Corrected issue in fn executeSearch and move it up in code
-- Changed order of initialize and execute functions.
-- Changed naming convention of Properties.
-	resultsElement to resultsContainer
-	tableId resultsContainerId
-- Changed fn name of initResultsElement to initializeResultsContainer
-- Moved fn setValuesFromResults to lower in code
+- Added consistency in code between RE and CE versions.
+- Corrected appendTo property use to use resultsContainer
+- Updates to function performBridgeRequestList for consistency with CE version
 
 **TODO
--Update List function to match the CE version
-
+- clear table and list when performing search.  Currently results stay when running the search.  IE one results returned in second search.
 
 **/
 (function($) {
@@ -300,7 +295,7 @@ KD Search RE Edition
      */
     function performBridgeRequestList(){
         var configObj = this;
-        configObj.before();
+		if(configObj.before){configObj.before();};
         //Retrieve and set the Bridge parameter values using JQuery
         var parameters = {};
         $.each(configObj.bridgeConfig.parameters, function(i,v){
@@ -320,55 +315,63 @@ KD Search RE Edition
             parameters: parameters,
             attributes: configObj.bridgeConfig.attributes,
             success: function(response) {
-                    this.$resultsList = $("<ul id='resultList'>");
-                    var self = this; // reference to this in current scope
-                    //Retrieve Records
-                    configObj.records=response.records;
-					if(configObj.records.length > 0 || !configObj.success_empty){
-						// Execute success callback
-						if(configObj.success){configObj.success();}
+                var self = this; // reference to this in current scope
+                //Retrieve Records
+                configObj.records=response.records;
+				if(configObj.records.length > 0 || !configObj.success_empty){
+					// Execute success callback
+					if(configObj.success){configObj.success();}
+       				// Only one record returned
+					if(typeof configObj.processSingleResult != "undefined" && configObj.processSingleResult && configObj.records.length == 1){
+						setValuesFromResults(configObj.data,  configObj.records[0].attributes);
+					}
+					// More than 1 record returned
+					else if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult ||configObj.records.length > 1){    
+	                    this.$resultsList = $("<ul id='resultList'>");
 						//Iterate through row results to retrieve data
-                        $.each(configObj.records, function(i,record){
+	                    $.each(configObj.records, function(i,record){
 							self.$singleResult = $("<li id='result'>");
 							//Iterate through the configured columns to match with data returned from bridge
-                            $.each(configObj.data, function(attribute, attributeObject){
+	                        $.each(configObj.data, function(attribute, attributeObject){
 								if (typeof record.attributes[attribute] != "undefined"){
-                                    var title ="";
+	                                var title ="";
 									if(attributeObject["title"]){
 										var $title = $('<div>', {class: "title " + attributeObject['className']}).html(attributeObject["title"]);
 										self.$singleResult.append($title);
 									}
 									if (attributeObject["date"] == true && typeof attributeObject["moment"] != "undefined") {
-                                        var attributeValue = moment(record.attributes[attribute]).format(attributeObject["moment"]);
-                                    } else {
-                                        //var attributeValue = record.attributes[attribute];
+	                                    var attributeValue = moment(record.attributes[attribute]).format(attributeObject["moment"]);
+	                                } else {
+	                                    //var attributeValue = record.attributes[attribute];
 										var $value = $('<div>', {class: attributeObject["className"]}).html(record.attributes[attribute]);
 										self.$singleResult.append($value); 
 										self.$singleResult.data(attribute,record.attributes[attribute])
-                                    }
-                                }
-                                else{
-                                self.$singleResult.append($('<div>'));
+	                                }
+	                            }
+	                            else{
+	                            self.$singleResult.append($('<div>'));
 								}
 							});
 							self.$resultsList.append(self.$singleResult);
-                        });
-						configObj.appendTo.empty().append(this.$resultsList);
-						configObj.appendTo.off().on( "click", 'li', function(event){
+	                    });
+						configObj.resultsContainer.empty().append(this.$resultsList);
+						configObj.resultsContainer.off().on( "click", 'li', function(event){
 							setValuesFromResults(configObj.data, $(this).data());
 							if(configObj.clickCallback){configObj.clickCallback($(this).data());};
+							configObj.resultsContainer.empty();
 						});
-						if(configObj.complete){configObj.complete();}
-                    }
-					else{
-						if(configObj.success_empty){configObj.success_empty();}
-					} 
-                },
-				error: function(response){
-					if(configObj.error){configObj.error();}
-					if(configObj.complete){configObj.complete();}
+					}
+				}       
+				else{
+					if(configObj.success_empty){configObj.success_empty();}
 				}
-            }); 
+				if(configObj.complete){configObj.complete();} 
+            },
+			error: function(response){
+				if(configObj.error){configObj.error();}
+				if(configObj.complete){configObj.complete();}
+			}
+        }); 
     }
     
     /**
