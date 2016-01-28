@@ -122,19 +122,19 @@ KD Search RE Edition
 		convertDataToColumns(configObj);
 		//Retrieve and set the Bridge parameter values using JQuery
         var parameters = {};
-        $.each(configObj.bridgeConfig.parameters, function(i,v){
-            parameters[i]=$(configObj.bridgeConfig.parameters[i]).val();
-        });
-		// Retrieve Bridge Search Attributes from Search Object
-		if(typeof configObj.bridgeConfig.attributes == "undefined"){
-			configObj.bridgeConfig.attributes = [];
-			$.each(configObj.bridgeConfig.parameters, function(i,v){
+		$.each(configObj.bridgeConfig.parameters, function(i,v){
             if(typeof v == "function"){
 				parameters[i] = v();
 			}
 			if(typeof v == "string"){
 				parameters[i]=$(configObj.bridgeConfig.parameters[i]).val();
 			}
+		});
+		// Retrieve Bridge Search Attributes from Search Object
+		if(typeof configObj.bridgeConfig.attributes == "undefined"){
+			configObj.bridgeConfig.attributes = [];
+			$.each(configObj.data, function( k, v ){
+				configObj.bridgeConfig.attributes.push(k)
 			});
 		}
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
@@ -239,7 +239,7 @@ KD Search RE Edition
 			$.each(configObj.data, function( k, v ){
 //				v.hasOwnProperty('attribute') && configObj.bridgeConfig.attributes.push(v['attribute'])
 				configObj.bridgeConfig.attributes.push(k)
-			})
+			});
 		}
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
         //create the connector necessary to connect to the bridge
@@ -316,7 +316,7 @@ KD Search RE Edition
 			configObj.bridgeConfig.attributes = [];
 			$.each(configObj.data, function( k, v ){
 				configObj.bridgeConfig.attributes.push(k)
-			})
+			});
 		}
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
         //create the connector necessary to connect to the bridge
