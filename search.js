@@ -129,12 +129,12 @@ KD Search RE Edition
 		if(typeof configObj.bridgeConfig.attributes == "undefined"){
 			configObj.bridgeConfig.attributes = [];
 			$.each(configObj.bridgeConfig.parameters, function(i,v){
-				if(typeof v == "function"){
-					parameters[i] = v();
-				}
-				if(typeof v == "string"){
-					parameters[i]=$(configObj.bridgeConfig.parameters[i]).val();
-				}
+            if(typeof v == "function"){
+				parameters[i] = v();
+			}
+			if(typeof v == "string"){
+				parameters[i]=$(configObj.bridgeConfig.parameters[i]).val();
+			}
 			});
 		}
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
@@ -310,7 +310,7 @@ KD Search RE Edition
 			if(typeof v == "string"){
 				parameters[i]=$(configObj.bridgeConfig.parameters[i]).val();
 			}
-        });
+		});
 		// Retrieve Bridge Search Attributes from Search Object
 		if(typeof configObj.bridgeConfig.attributes == "undefined"){
 			configObj.bridgeConfig.attributes = [];
