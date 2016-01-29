@@ -1,14 +1,14 @@
 /**
 KD Search RE Edition
 
-**Completed 1/14/2016 Brian Peterson
+**Completed 1/29/2016 Brian Peterson
 
-- Added consistency in code between RE and CE versions.
-- Corrected appendTo property use to use resultsContainer
-- Updates to function performBridgeRequestList for consistency with CE version
+- Added use of "clearOnClick" property to clear the table when defined.
+- Destroy Tables and list before creating a new one.
+- Fix an issue where list content was appended rather than over writing and previous results.
+- A result container for BridgeList is no longer created.  Results are appended directly the the appendTo.
 
 **TODO
-- clear table and list when performing search.  Currently results stay when running the search.  IE one results returned in second search.
 
 **/
 (function($) {
@@ -45,7 +45,6 @@ KD Search RE Edition
     /* Define default properties for defaultsBridgeList object. */
     var defaultsBridgeList = {
         execute: performBridgeRequestList,
-		resultsContainer : '<div">',
     };
     
     /* Define default properties for defaultsBridgeGetSingle object. */
@@ -97,8 +96,8 @@ KD Search RE Edition
             else if(obj.type=="BridgeList"){
                 // Entend defaults into the configuration
                 obj=$.extend( {}, defaultsBridgeList, obj );
-                // Create a results element for Datatables and add to DOM
-				obj=initializeResultsContainer(obj); 
+                // Get the appendTo Obj
+				obj.appendTo = evaluteObjType(obj.appendTo);
             }
             else if(obj.type=="BridgeGetSingle"){
                 // Entend defaults into the configuration
@@ -364,11 +363,13 @@ KD Search RE Edition
 							});
 							self.$resultsList.append(self.$singleResult);
 	                    });
-						configObj.resultsContainer.empty().append(this.$resultsList);
-						configObj.resultsContainer.off().on( "click", 'li', function(event){
+						configObj.appendTo.empty().append(this.$resultsList);
+						configObj.appendTo.off().on( "click", 'li', function(event){
 							setValuesFromResults(configObj.data, $(this).data());
 							if(configObj.clickCallback){configObj.clickCallback($(this).data());};
-							configObj.resultsContainer.empty();
+							if(configObj.clearOnClick || typeof configObj.clearOnClick == "undefined"){
+								configObj.appendTo.empty();
+							}
 						});
 					}
 				}       
@@ -514,25 +515,31 @@ KD Search RE Edition
      */	
 	function initializeResultsContainer(obj){
 		// Create resultsContainer
-		if(typeof obj.resultsContainer == "string"){ // if string
-			obj.resultsContainer = $(obj.resultsContainer).attr('id',obj.resultsContainerId);
-		}
-		else if(typeof obj.resultsContainer == "function"){ // if function
-			obj.resultsContainer = obj.resultsContainer().attr('id',obj.resultsContainerId);
-		}
+		obj.resultsContainer = evaluteObjType(obj.resultsContainer).attr('id',obj.resultsContainerId);
 		// Append to DOM
-		if(obj.appendTo instanceof $){ // if jQuery Obj
-			obj.appendTo.append(obj.resultsContainer);
-		}
-		else if(typeof obj.appendTo == "string"){ // if string
-			obj.appendTo = $(obj.appendTo).append(obj.resultsContainer);
-		}
-		else if(typeof obj.appendTo == "function"){ // if function
-			obj.appendTo = obj.appendTo().append(obj.resultsContainer);
-		}
+		obj.appendTo = evaluteObjType(obj.appendTo).append(obj.resultsContainer);
 		return obj;
 	}
 	
+	/**
+     * Returns object 
+     * @param {Object} table
+     */
+	function evaluteObjType(obj){
+		// Append to DOM
+		if(obj instanceof $){ // if jQuery Obj
+			obj = obj;
+		}
+		else if(typeof obj == "string"){ // if string
+			obj = $(obj);
+		}
+		else if(typeof obj == "function"){ // if function
+			obj = obj();
+		}
+		return obj;
+	}
+
+
 	/**
      * Returns object containing data from row
      * @param {Object} table
@@ -560,6 +567,10 @@ KD Search RE Edition
 	* @param {Object} Search Object used to create the DataTable
 	*/
 	function createDataTable(configObj){
+		// Destroy any DataTable which may already exist.
+		if ( $.fn.DataTable.isDataTable( '#'+configObj.resultsContainerId ) ) {
+			$('#'+configObj.resultsContainerId).DataTable().destroy(true);
+		}
 		configObj.tableObj = $('#'+configObj.resultsContainerId).DataTable( configObj );
 		configObj.tableObj.rows.add(configObj.dataArray).draw();
 		// Bind Click Event based on where the select attribute extists ie:<tr> or <td>
@@ -577,8 +588,9 @@ KD Search RE Edition
 				setValuesFromResults(configObj.data, resultsObj);
 				if(configObj.clickCallback){configObj.clickCallback(resultsObj);}
 				// Destroy DataTable and empty in case columns change.
-				configObj.tableObj.destroy();
-				$('#'+configObj.resultsContainerId).empty();
+				if(configObj.clearOnClick || typeof configObj.clearOnClick == "undefined"){
+					configObj.tableObj.destroy(true);
+				}
 			}
 		});
 	}
