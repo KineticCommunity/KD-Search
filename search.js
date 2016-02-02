@@ -179,7 +179,11 @@ KD Search RE Edition
 							$.each(configObj.data, function(attribute, attributeObject){
 								if (typeof record.attributes[attribute] != "undefined"){
 									if (attributeObject["date"] == true && typeof attributeObject["moment"] != "undefined") {
-										var attributeValue = moment(record.attributes[attribute]).format(attributeObject["moment"]);
+										if (record.attributes[attribute] != "") {
+											var attributeValue = moment(record.attributes[attribute]).format(attributeObject["moment"]);
+										} else {
+											var attributeValue = record.attributes[attribute];
+										}
 									} else {
 										var attributeValue = record.attributes[attribute];
 									}
@@ -350,7 +354,11 @@ KD Search RE Edition
 										self.$singleResult.append($title);
 									}
 									if (attributeObject["date"] == true && typeof attributeObject["moment"] != "undefined") {
-	                                    var attributeValue = moment(record.attributes[attribute]).format(attributeObject["moment"]);
+										if (record.attributes[attribute] != "") {
+											var attributeValue = moment(record.attributes[attribute]).format(attributeObject["moment"]);
+										} else {
+											var attributeValue = record.attributes[attribute];
+										}
 	                                } else {
 	                                    //var attributeValue = record.attributes[attribute];
 										var $value = $('<div>', {class: attributeObject["className"]}).html(record.attributes[attribute]);
@@ -417,7 +425,11 @@ KD Search RE Edition
 							var objKey = v["data"];
 							if (typeof KD.utils.Action.getRequestValue(record, objKey) != "undefined"){
 								if (v["date"] == true && typeof v["moment"] != "undefined") {
-									var objVal = moment(KD.utils.Action.getRequestValue(record, objKey)).format(v["moment"]);
+								    if (objVal != "") {
+										var objVal = moment(KD.utils.Action.getRequestValue(record, objKey)).format(v["moment"]);
+									} else {
+										var objVal = KD.utils.Action.getRequestValue(record, objKey);
+									}
 								} else {
 									var objVal = KD.utils.Action.getRequestValue(record, objKey);
 								}
