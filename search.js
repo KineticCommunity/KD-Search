@@ -130,7 +130,10 @@ KD Search RE Edition
 		if(typeof configObj.bridgeConfig.attributes == "undefined"){
 			configObj.bridgeConfig.attributes = [];
 			$.each(configObj.data, function( k, v ){
-				configObj.bridgeConfig.attributes.push(k)
+				if(typeof v["notdynamic"] == "undefined") {
+			        //we want include it in the attributes
+					configObj.bridgeConfig.attributes.push(k)
+				}
 			});
 		}
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
@@ -238,7 +241,7 @@ KD Search RE Edition
 			configObj.bridgeConfig.attributes = [];
 			$.each(configObj.data, function( k, v ){
 //				v.hasOwnProperty('attribute') && configObj.bridgeConfig.attributes.push(v['attribute'])
-				configObj.bridgeConfig.attributes.push(k)
+					configObj.bridgeConfig.attributes.push(k)
 			});
 		}
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
@@ -315,7 +318,10 @@ KD Search RE Edition
 		if(typeof configObj.bridgeConfig.attributes == "undefined"){
 			configObj.bridgeConfig.attributes = [];
 			$.each(configObj.data, function( k, v ){
-				configObj.bridgeConfig.attributes.push(k)
+				if(typeof v["notdynamic"] == "undefined") {
+			        //we want include it in the attributes
+					configObj.bridgeConfig.attributes.push(k)
+				}
 			});
 		}
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;

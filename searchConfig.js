@@ -123,6 +123,7 @@ searchConfig ={
 			parameters: {'Full Name': '#requested_for input','First Name': '#requested_for input','Last Name': '#requested_for input'},
 		},
 		processSingleResult: true,
+		//clearOnClick:false,  //this option prevents the table from clearing when clicked. Most applicable for console tables
 		// Properties in the data must match the attributes of the Bridge Request
 		data: {
 			"First Name":{
@@ -152,6 +153,12 @@ searchConfig ={
 				title:"PHONE",
 				className: "hidden",
 				setQstn:"ReqFor_Phone"
+			},
+			"Empty":{
+			  title:" "
+			  className: "all"
+			  //Optional, This means we won't use this as an attibute in the bridge and it can be filled in with static content, like buttons 
+			  notdynamic: true  
 			}
 		},
 		//Where to append the table
@@ -183,6 +190,14 @@ searchConfig ={
 			togglePanel(this);
 		},
 		createdRow: function ( row, data, index ) {
+		    //sample for notdynamic data
+		    //This type of button functionality is probably most applicable for console type tables
+		   $('td',row).eq(5).addClass("cursorPointer");
+			rowButtonHTML = '<button title="Edit Item" class="btn-edit" value="Edit"><i class="fa fa-pencil-square-o"></i></button><button title="Delete Item" class="btn-delete" value="Delete"><i class="fa fa-scissors"></i></button>';
+			$('td',row).eq(5).html(rowButtonHTML);
+			$('td',row).eq(5).click(function(e) {
+			//do something
+			});
 		},
 		fnFooterCallback: function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
 			console.log(aaData);
