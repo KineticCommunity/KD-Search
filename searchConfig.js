@@ -155,8 +155,8 @@ searchConfig ={
 				setQstn:"ReqFor_Phone"
 			},
 			"Empty":{
-			  title:" "
-			  className: "all"
+			  title:" ",
+			  className: "all",
 			  //Optional, This means we won't use this as an attibute in the bridge and it can be filled in with static content, like buttons 
 			  notdynamic: true  
 			}
