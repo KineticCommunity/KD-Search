@@ -136,12 +136,15 @@ KD Search RE Edition
 				}
 			});
 		}
+
+		
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
         //create the connector necessary to connect to the bridge
         var connector = new KD.bridges.BridgeConnector({templateId: templateId});
 		connector.search(configObj.bridgeConfig.model, configObj.bridgeConfig.qualification_mapping, {
 			parameters: parameters,
 			attributes: configObj.bridgeConfig.attributes,
+			metadata: configObj.bridgeConfig.metadata,
 			success: function(response) {
 				configObj.dataArray = [];
 				//Retrieve Records
@@ -251,9 +254,9 @@ KD Search RE Edition
 		connector.retrieve(configObj.bridgeConfig.model, configObj.bridgeConfig.qualification_mapping, {
 			//parameters: parameters,
 			parameters: parameters,
-			metadata: configObj.bridgeConfig.metadata,
 			//attributes: configObj.bridgeConfig.attributes,
 			attributes: configObj.bridgeConfig.attributes,
+			metadata: configObj.bridgeConfig.metadata,
 			//TODO: Move Success into object configuration????  Does it make sense?
 			success: function(response) {
 				//Retrieve Records
@@ -330,6 +333,7 @@ KD Search RE Edition
 		connector.search(configObj.bridgeConfig.model, configObj.bridgeConfig.qualification_mapping, {
             parameters: parameters,
             attributes: configObj.bridgeConfig.attributes,
+			metadata: configObj.bridgeConfig.metadata,
             success: function(response) {
                 var self = this; // reference to this in current scope
                 //Retrieve Records

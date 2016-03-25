@@ -121,6 +121,7 @@ searchConfig ={
 			qualification_mapping: "By First Name or Last Name or Full Name",
 			//Params to be created and passed to the Bridge.  VALUE MUST BE JQUERY SELECTOR.
 			parameters: {'Full Name': '#requested_for input','First Name': '#requested_for input','Last Name': '#requested_for input'},
+			metadata: {"order": [encodeURIComponent('<%=attribute["Last Name"]%>:ASC')]}
 		},
 		processSingleResult: true,
 		//clearOnClick:false,  //this option prevents the table from clearing when clicked. Most applicable for console tables
