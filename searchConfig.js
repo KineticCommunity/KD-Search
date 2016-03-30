@@ -1,499 +1,730 @@
-//Function to toggle unclickable elements and spinning search icon
-//Used in several callbacks of searchConfig Objects
-function toggleUnclickable(o){
-	$(o).children().find('.searching').toggle();
-	$(o).toggleClass('unclickable');
-	$(o).find('input').prop('disabled', function(i, v) { return !v; });
+//This is a sample configuration for a submission console
+submissionSearch = {
+    RequestsConfig:{
+        // type: "BridgeDataTable", "BridgeList", "BridgeGetSingle", or "performSDRTable".  Determines default values to be used and behavior.
+        type: "BridgeDataTable",
+        // responsive: OPTIONAL Default for "BridgeDataTable" is true but can be over written.
+        // responsive: false,
+        // processSingleResult does the same thing as the click callback would do if there is just one result
+		// found, rather than displaying the one row for the user to click on. For console tables or tables you
+		// want to always display, even if there is just one record, this should be set to false.
+        processSingleResult: false,
+		// clearOnClick: OPTIONAL Default is true but can be over written. This means that the table clears/is 
+		// destroyed when the first row click occurs. This is often desirable for search tables, but undesirable 
+		// for console tables.
+        clearOnClick: false,
+		// These are examples of datatable configuration that is simply passed through to datatables.
+        "pageLength": 15,
+        "order":[[1,"desc"]],   //order by KSR - note this is order of the data returned, not order of the data during the bridge search
+        // Properties in the data must match the attributes of the Bridge Request or have a "notdynamic" option set to true. This would be on
+		// the same level as title and className
+        data: {
+            "KSR Number":{
+                //This will be the title of the column or the label of the element, depending on the search type
+				title:"Request ID",
+				//This will be the class given to the column/cell/div as appropriate for the search type
+                className: "all"
+            },
+            "Submission Date":{
+                title:"Submitted",
+				//For responsive datatables, a class of all always displays, none is in the subrow data (responsive data), and never is always hidden
+				//For non-responsive datatables, a class of hidden will hide the column. see https://datatables.net/extensions/responsive/classes
+				//for more details and options
+                className: "all",
+                //This allows for dates to be formatted in whatever format desired, using moment.
+				date:true,
+                moment: "MM/DD/YYYY HH:mm:ss"
+            },
+            "Service Item Name":{
+                title:"Service Item",
+                className: "all"
+            },
+            "Validation Status":{
+                title:"Status",
+                className: "all"
+            },
+            "Requested For First Name":{
+                title:"First Name",
+                className: "all"
+            },
+            "Requested For Last Name":{
+                title:"Last Name",
+                className: "all"
+            },
+            "CustomerSurveyInstanceId":{
+                title:"CustomerSurveyInstanceId",
+                className: "never"
+            }
+                                               
+        },
+        //Where to append the table. This element should exist on the page
+		//If a string is returned it will be processed as jQuery. Otherwise
+		//return the element in a function.
+        appendTo: function(){return $('#requestTableContainer');},
+		//a string of the id to give the created table. This should not exist on the page.
+        resultsContainerId: 'openReqTable',
+        before: function(){ //before search         
+        },
+        success: function (){  //This occurs when results are found     
+        },
+        success_empty: function(){  //This occurs when the search is successful, but no results are found                                             
+        },
+        error: function(){  //This occurs if there is an error on the search      
+        },
+        complete: function(){   //This occurs when the build of the table is complete  
+        },
+        clickCallback: function(results){  //This occurs when a row is clicked
+            //display submission details panel
+            BUNDLE.ajax({
+                url: BUNDLE.packagePath + 'interface/callbacks/submissionDetails.html.jsp?id=' + results['KSR Number'] + '&csrv=' + results['CustomerSurveyInstanceId'],
+                type: "GET",
+                success: function(data) {
+                    var element = jQuery(data);
+                    jQuery('#dialogContainer').append(element);
+                                element.dialog({
+                                closeText: 'close this window',
+                                    width: 500
+                                });
+                    $(element).parent().append('<div class="kd-shadow"></div>');
+                }
+            });
+        },
+        createdRow: function ( row, data, index ) {  //This runs when the rows are being built. It is a passthrough to datatables.
+		   //this is how you can add a class to the row being built.
+           $('td',row).addClass("cursorPointer");
+        },
+
+        dom: 'Bfrtip',
+    },
+	//What follows are partial configs, meant to be used with/override the above. This would be done/executed like so:
+	//KDSearch.executeSearch(submissionSearch.RequestsConfig, submissionSearch.myOpenRequestsConfig);
+	//This allows for set up of the shared setup of the My Requests tables once, and then only the unique elements need
+	//to be set up in the individual/override configurations.
+	myOpenRequestsConfig:{
+        //This is the bridge configuration
+        bridgeConfig:{
+		    //The name of the model used is specified here
+            model: "CustomerSurveyBase",
+			//The qualification mapping used is specified here. Note that this bridge and qualification mapping must be
+			//exposed on the service item where this is being used.
+            qualification_mapping: "Open By Requested For and Requested By",
+            //Params to be created and passed to the Bridge.  VALUE MUST BE JQUERY SELECTOR if specified as a string.
+			//This allows you to select values out of any element on the page, question or just dom element.
+			//Otherwise, pass a function that returns the desired value. The function allows use of variables, etc.
+            parameters: {'Login Id': function(){ return clientManager.userName;}},
+        },
+        
+    },
+    myClosedRequestsConfig:{
+	    //Note that this qualification is different than in the override above. 
+        bridgeConfig:{
+            model: "CustomerSurveyBase",
+            qualification_mapping: "Closed By Requested For and Requested By",
+            parameters: {'Login Id': function(){ return clientManager.userName;}},
+        },
+        //Where to append the table. Note that this is different than the value in the original table
+		//configuration. This will override that value when the two are used together. The same is true
+		//with the next setting.
+        appendTo: function(){return $('#requestTableContainer');},
+        //ID to give the table when creating it. Note that this overrides the original.
+        resultsContainerId: 'closedReqTable',
+
+    },
+    mySavedRequestsConfig:{
+		//Note that this qualification is different than in the override above.
+        bridgeConfig:{
+            model: "CustomerSurveyBase",
+            qualification_mapping: "Saved By Requested For and Requested By",
+            parameters: {'Login Id': function(){ return clientManager.userName;}},
+        },
+        appendTo: function(){return $('#requestTableContainer');},
+        resultsContainerId: 'savedReqTable',
+		//What to do on row click. Note that this is different than the value in the original table
+		//configuration. This will override that value when the two are used together. The same is true
+		//with the next setting.
+        clickCallback: function(results){
+           //open the selected request in a window (default set by client as to whether it is in a new window, tab, etc)
+           window.open('/kinetic/DisplayPage?csrv=' + results['CustomerSurveyInstanceId'] + '&return=yes');
+        },
+    },
 }
-	
-function loadSearch() {
-KDSearch.executeSearch(searchConfig.defaultRequestedFor);
-KDSearch.executeSearch(searchConfig.defaultContact);
-KDSearch.executeSearch(searchConfig.defaultListContact);
 
+//This is a requested for/manager example
+SearchConfig ={
+    requestedForConfig:{
+        // type: "BridgeDataTable", "BridgeList", "BridgeGetSingle", or "performSDRTable".  Determines default values to be used and behavior.
+        type: "BridgeDataTable",
+        // responsive: OPTIONAL Default for "BridgeDataTable" is true but can be over written.
+        //responsive: false,
+        bridgeConfig:{
+		    //The name of the model used is specified here
+            model: "People",
+			//The qualification mapping used is specified here. Note that this bridge and qualification mapping must be
+			//exposed on the service item where this is being used.
+            qualification_mapping: "Enabled By Last Name",
+            //Params to be created and passed to the Bridge.  VALUE MUST BE JQUERY SELECTOR if specified as a string.
+			//This allows you to select values out of any element on the page, question or just dom element.
+			//Otherwise, pass a function that returns the desired value. The function allows use of variables, etc.
+			//Below is an example of getting the value out of a text question with jQuery (you could also use a function 
+			//and KD.utils.Action.getQuestionValue) but getting a value out of a drop down list question is slightly 
+			//different '[label="QuestionLabelHere"] select' 
+            parameters: {'Last Name': '[label="Search By Last Name"] input'},
+        },
+		// processSingleResult does the same thing as the click callback would do if there is just one result
+		// found, rather than displaying the one row for the user to click on. For console tables or tables you
+		// want to always display, even if there is just one record, this should be set to false.
+        processSingleResult: true,
+        // Properties in the data must match the attributes of the Bridge Request or have a "notdynamic" option set to true. This would be on
+		// the same level as title and className
+        data: {
+            "Last Name":{
+			    //This will be the title of the column or the label of the element, depending on the search type
+                title:"Last Name",
+				//This will be the class given to the column/cell/div as appropriate for the search type
+                className: "all",
+				//This is the menu label of the question to be set with the value from this column and row when a row is clicked.
+                setQstn:"ReqFor_Last Name",
+            },
+            "First Name":{
+                title:"First Name",
+				//For responsive datatables, a class of all always displays, none is in the subrow data (responsive data), and never is always hidden
+				//For non-responsive datatables, a class of hidden will hide the column. see https://datatables.net/extensions/responsive/classes
+				//for more details and options
+                className: "all",
+                setQstn:"ReqFor_First Name"
+            },
+            "Login ID":{
+                title:"Login ID",
+                className: "all",
+                setQstn:"ReqFor_Login ID",
+            },
+            "Company":{
+                title:"Company",
+                className: "all",
+                 setQstn:"ReqFor_Company",
+            },
+            "Organization":{
+                title:"Organization",
+                className: "all"
+            },
+            "Department":{
+                title:"Department",
+                className: "all",
+                setQstn:"ReqFor_Department",
+            },
+            "Phone Number":{
+                title:"Phone Number",
+                className: "none",
+                setQstn:"ReqFor_Phone",
+            },
+            "E-mail":{
+                title:"Email",
+                className: "none",
+                setQstn:"ReqFor_Email",
+            },
+            "JobTitle":{
+                title:"Job Title",
+                className: "never",
+                setQstn:"ReqFor_JobTitle",
+            },
+            "Site":{
+                title:"Location",
+                className: "never",
+                setQstn:"ReqFor_Location",
+            },
+            "SupervisorID":{
+                title:"Manager",
+                className: "never",
+                setQstn:"Mgr_Login ID",
+            }
+                                               
+        },
+        //Where to append the table. This element should exist on the page
+		//If a string is returned it will be processed as jQuery. Otherwise
+		//return the element in a function.
+        appendTo: function(){return $('[label="Search Buttons"]');},
+        //ID to give the table when creating it. This should not already exist
+        resultsContainerId: 'reqForTable',
+        before: function(){ //before search
+		   //disable the search button so it can't be re-clicked and display a spinner/wait icon
+           $('#searchReqFor').prop('disabled',true);
+           $('#spinner_searchReqFor').show();
+        },
+        success: function (){ //this is done when results are returned successfully
+		  //hide the spinner/wait icon
+          $('#spinner_searchReqFor').hide();
+        },
+        success_empty: function(){  //this is done if a successful search returns no results
+		  //hide the spinner/wait icon and display an alert
+          $('#spinner_searchReqFor').hide();
+          alert("Your search criteria did not return any results, please check your criteria and try again.");    
+        },
+        error: function(){  //this is done if the search errors
+           
+        },
+        complete: function(){  //this is done when the build of the table completes
+		   //format the resultant table to a particular width, for example.
+           $('#reqForTable').width(936);
+        },
+        clickCallback: function(results){  //this is additional action (beyond set question) that happens on row click.
+		    //the values of the row are available in results, indexed by the name of the attribute in the bridge
+			//in this case, we are setting the returned supervisor ID into an additional question, firing change
+			//of that question element, clearing the search field, and re-enabling the search button.
+            KD.utils.Action.setQuestionValue('Mgr_Login ID', results['SupervisorID']);
+            var MgmrElem = KD.utils.Util.getQuestionInput("Mgr_Login ID");
+            KD.utils.Action._fireChange(MgmrElem);
+            KD.utils.Action.setQuestionValue("Search By Last Name", "");
+            $('#searchReqFor').prop('disabled',false);
+        },
+        createdRow: function ( row, data, index ) {  //this is done when the row is being built (a pass through to datatables)
+		   //see https://datatables.net/reference/option/createdRow for details/options
+        },
+        dom: 'Bfrtip',
+    },
+    defaultRequestedForConfig:{
+        // type: "BridgeDataTable", "BridgeList", "BridgeGetSingle", or "performSDRTable".  Determines default values to be used and behavior.
+        type: "BridgeGetSingle",
+        bridgeConfig:{
+            model: "People",
+            qualification_mapping: "By Login ID",
+            //Params to be created and passed to the Bridge.  VALUE MUST BE JQUERY SELECTOR if specified as a string.
+			//This allows you to select values out of any element on the page, question or just dom element.
+			//Otherwise, pass a function that returns the desired value. The function allows use of variables, etc.
+            parameters: {'Login ID':  function(){return clientManager.userName;}},
+        },
+        processSingleResult: true,
+        // Properties in the data must match the attributes of the Bridge Request
+        data: {
+		    //Note that title and class are not relevant options for BridgeGetSingle. The only relevant data options
+			//are setQstn and Callback.
+            "Last Name":{
+			    //This is the menu label of the question to be set with the value from the record found
+                setQstn:"ReqFor_Last Name",
+            },
+            "First Name":{
+                setQstn:"ReqFor_First Name"
+            },
+            "Login ID":{
+                setQstn:"ReqFor_Login ID",
+            },
+            "Company":{
+                setQstn:"ReqFor_Company",
+            },
+            "Department":{
+                setQstn:"ReqFor_Department",
+            },
+            "Phone Number":{
+                setQstn:"ReqFor_Phone",
+            },
+            "E-mail":{
+                setQstn:"ReqFor_Email",
+            },
+            "JobTitle":{
+                setQstn:"ReqFor_JobTitle",
+            },
+            "Site":{
+                setQstn:"ReqFor_Location",
+            },
+            "SupervisorID":{
+				//since there is no row click (no table, no rows), if something should happen when the results are returned/set, a Callback
+				//function should be set on one (or more) of the data values.
+                callback:function(value){
+				    //in this case we are setting the Mgr_Login ID and firing change, as we did on row click in the table above. For this 
+					//default user config, using BridgeGetSingle we need to do it here in a Callback instead.
+					KD.utils.Action.setQuestionValue('Mgr_Login ID', value);
+					var MgmrElem = KD.utils.Util.getQuestionInput("Mgr_Login ID");
+					KD.utils.Action._fireChange(MgmrElem);
+                },
+                setQstn:"OrigMgr_Login ID",
+            }
+                                               
+        },
+        //Where to append the table
+        appendTo: function(){return $('[label="This Request is For"]');},
+        //ID to give the table when creating it.
+        resultsContainerId: 'reqForTable',
+        before: function(){ //before search
+          
+        },
+        success: function (){  //this is done when the search returns successfully                           
+           
+        },
+        success_empty: function(){  //this is done when the search returns empty/no result. 
+		    //Note that if this is empty, no result will "fail" silently
+            alert("Your search criteria did not return any results, please check your criteria and try again.");
+        },
+        error: function(){  //This occurs if there is an error on the search      
+        },
 
+        dom: 'Bfrtip',
+    },
+    mgrConfig:{
+        // type: "BridgeDataTable", "BridgeList", "BridgeGetSingle", or "performSDRTable".  Determines default values to be used and behavior.
+        type: "BridgeDataTable",
+        // responsive: OPTIONAL Default for "BridgeDataTable" is true but can be over written.
+        //responsive: false,
+        bridgeConfig:{
+            model: "People",
+            qualification_mapping: "Enabled By Last Name",
+            parameters: {'Last Name': '[label="Mgr Search By Last Name"] input'},
+        },
+        processSingleResult: true,
+        // Properties in the data must match the attributes of the Bridge Request or have a "notdynamic" option set to true. This would be on
+		// the same level as title and className
+        data: {
+            "Last Name":{
+			    //This will be the title of the column or the label of the element, depending on the search type
+                title:"Last Name",
+				//This will be the class given to the column/cell/div as appropriate for the search type
+                className: "all",
+				//This is the menu label of the question to be set with the value from this column and row when a row is clicked.
+                setQstn:"Mgr_Last Name",
+            },
+            "First Name":{
+                title:"First Name",
+				//For responsive datatables, a class of all always displays, none is in the subrow data (responsive data), and never is always hidden
+				//For non-responsive datatables, a class of hidden will hide the column. see https://datatables.net/extensions/responsive/classes
+				//for more details and options
+                className: "all",
+                setQstn:"Mgr_First Name"
+            },
+            "Login ID":{
+                title:"Login ID",
+                className: "all",
+				//callback is also a valid option for type: "BridgeDataTable", "BridgeList". It happens when a row/item is selected
+                callback:function(value){
+					KD.utils.Action.setQuestionValue('Mgr_Login ID', value);
+					var MgmrElem = KD.utils.Util.getQuestionInput("Mgr_Login ID");
+					KD.utils.Action._fireChange(MgmrElem);
+                },
+                setQstn:"Mgr_Login ID",
+            },
+			"Company":{
+                title:"Company",
+                className: "all"
+            },
+			"Organization":{
+                title:"Organization",
+                className: "all"
+            },
+            "Department":{
+                title:"Department",
+                className: "all",
+				setQstn:"Mgr_Department",
+            },
+            "Phone Number":{
+                title:"Phone Number",
+                className: "none",
+                setQstn:"Mgr_Phone",
+            },
+           "E-mail":{
+                title:"Email",
+                className: "none",
+                setQstn:"Mgr_Email",
+            },
+            "JobTitle":{
+                title:"Job Title",
+                className: "never",
+                setQstn:"Mgr_JobTitle",
+            },
+            "Site":{
+                title:"Location",
+                className: "never",
+                setQstn:"Mgr_Location",
+            }
+                                               
+        },
+        //Where to append the table
+        appendTo: function(){return $('[label="Mgr Search Buttons"]');},
+        //ID to give the table when creating it.
+        resultsContainerId: 'MgrTable',
+        before: function(){ //before search
+            $('#searchMgr').prop('disabled',true);
+            $('#spinner_searchMgr').show();
+        },
+        success: function (){
+           $('#spinner_searchMgr').hide();
+        },
+        success_empty: function(){
+            $('#spinner_searchMgr').hide();
+            alert("Your search criteria did not return any results, please check your criteria and try again.");
+        },
+        error: function(){
+           
+        },
+        complete: function(){
+          
+        },
+        clickCallback: function(results){
+            $('#searchMgr').prop('disabled',false);
+            KD.utils.Action.setQuestionValue("Mgr Search By Last Name", "");
+        },
+        createdRow: function ( row, data, index ) {
+        },
+        dom: 'Bfrtip',
+    },
+    defaultMgrConfig:{
+         // type: "BridgeDataTable", "BridgeList", "BridgeGetSingle", or "performSDRTable".  Determines default values to be used and behavior.
+        type: "BridgeGetSingle",
+        // responsive: OPTIONAL Default for "BridgeDataTable" is true but can be over written.
+        //responsive: false,
+        bridgeConfig:{
+            model: "People",
+            qualification_mapping: "By Login ID",
+            //Params to be created and passed to the Bridge.  VALUE MUST BE JQUERY SELECTOR if specified as a string.
+			//This allows you to select values out of any element on the page, question or just dom element.
+			//Otherwise, pass a function that returns the desired value. The function allows use of variables, etc.
+			//Below is an example of getting the value out of a text question with jQuery (you could also use a function 
+			//and KD.utils.Action.getQuestionValue) but getting a value out of a drop down list question is slightly 
+			//different '[label="QuestionLabelHere"] select' 
+            parameters: {'Login ID': '[label="Mgr_Login ID"] input'},
+        },
+        processSingleResult: true,
+        // Properties in the data must match the attributes of the Bridge Request
+        data: {
+            "Last Name":{
+                title:"Last Name",
+                className: "all",
+                setQstn:"Mgr_Last Name",
+            },
+            "First Name":{
+                title:"First Name",
+                className: "all",
+                setQstn:"Mgr_First Name"
+            },
+            "Login ID":{
+                title:"Login ID",
+                className: "all",
+                setQstn:"Mgr_Login ID",
+            },
+            "Company":{
+                title:"Company",
+                className: "all"
+            },
+            "Organization":{
+                title:"Organization",
+                className: "all"
+            },
+            "Department":{
+                title:"Department",
+                className: "all",
+                setQstn:"Mgr_Department",
+            },
+            "Phone Number":{
+                title:"Phone Number",
+                className: "none",
+                setQstn:"Mgr_Phone",
+            },
+            "E-mail":{
+                title:"Email",
+                className: "none",
+                setQstn:"Mgr_Email",
+            },
+            "JobTitle":{
+                title:"Job Title",
+                className: "never",
+                setQstn:"Mgr_JobTitle",
+            },
+            "Site":{
+                title:"Location",
+                className: "never",
+                setQstn:"Mgr_Location",
+            }
+                                               
+        },
+        //Where to append the table
+        appendTo: function(){return $('[label="Mgr Search Buttons"]');},
+        //ID to give the table when creating it.
+        resultsContainerId: 'MgrTable',
+        before: function(){ //before search         
+        },
+        success: function (){  //This occurs when results are found     
+        },
+        success_empty: function(){  //This occurs when the search is successful, but no results are found                                             
+        },
+        error: function(){  //This occurs if there is an error on the search      
+        },
+        complete: function(){   //This occurs when the build of the table is complete  
+        },
+        clickCallback: function(results){  //This occurs on click
+          
+        },
+        createdRow: function ( row, data, index ) { //This occurs when the row is being built
+        },
+        dom: 'Bfrtip',
+    }
 }
 
-//Append Slide Panel Dive
-$( ".content-slide" ).before("<div class='search-slide' style='display:none; position: absolute;  top: 0;  bottom: 0;  left: 0;  height: 100%;  width: 100%;'></div>");
-//Bind Events to Search Elements
-
-/*
-Bind Events to Search buttons
-The data attribute of searchconfig must be applied to each button inorder for events to properly work.
-The data attribute is used to indicate which searchConfig is used to search for values.	
-*/
-//Return Keypress in input (Not clickable if 'unclickable' class is set.)
-$(document).on('keypress', '.search-container:not(.unclickable) .someoneelse input',function(e) {
-	if(e.which == 13) {
-		searchConfigObj = searchConfig[$(this).closest('.search-btn').data('searchconfig')];
-		KDSearch.executeSearch(searchConfigObj);
-	}
-});
-//Click on search icon (Not clickable if 'unclickable' class is set in before function.)
-$(document).on('click', '.search-container:not(.unclickable) .fa-search', function(){
-	searchConfigObj = searchConfig[$(this).closest('.search-btn').data('searchconfig')];
-	KDSearch.executeSearch(searchConfigObj);
-});
-//Click on Myself (Not clickable if 'unclickable' class is set in before function.)
-$(document).on('click', '.search-container:not(.unclickable) .search-btn:not(.active).myself', function(){
-	searchConfigObj = searchConfig[$(this).closest('.search-btn').data('searchconfig')];
-	KDSearch.executeSearch(searchConfigObj);
-});
-
-//Bind events to toggle active class to disable elements while search is performing.
-//Also clears out values when a either myself or someone else is clicked
-//Only buttons which do not have the active or unclickable class applied.
-//Event is bound to all search buttons
-$(document).on('click', '.search-container:not(.unclickable) .search-btn:not(.active)', function(){
-	$(this).parent().find('.search-btn').toggleClass(function() {
-		var searchBtn = $(this).closest('.search-btn');
-		// if the searchconfig data attribute is set on the element and the button is currently active.
-/*			if(searchBtn.data('searchconfig') && searchBtn.hasClass('active')){
-			//Loop through each of question elements configured in the column obj and clear it to prep for new values
-			$.each(KDSearch.searchConfig[searchBtn.data('searchconfig')].data, function(attribute, attributeObject){
-				if(attributeObject.setQstn){
-					KD.utils.Action.setQuestionValue(attributeObject.setQstn, "");
-				}
-			})
-		}
-*/
-		return "active";
-	});
-	if(!$(this).hasClass('someoneelse')){
-		$('.someoneelse input').val('');
-	}
-})
-
-
-
-/**
- * Toggle Panel used to display results
- * Currently only works with Responsive Bundle
- */
-togglePanel = function(configObj){
-		var contentSlide = $('div.content-slide');
-		// Turn off any previous one events to prevent stacking
-		contentSlide.off('click');
-		$(window).off('resize');
-		// First click of the button or not defined
-		if(typeof(search.firstToggleClick) == 'undefined' || search.firstToggleClick) {
-			search.firstToggleClick = false;
-			// Update scroll top information
-			previousScrollTop = $(window).scrollTop();
-			currentScrollTop = '-' + $(window).scrollTop() + 'px';
-			$(':focus').blur();
-			$('#'+configObj.resultsContainerId).parents('div.dataTables_wrapper').first().show();
-			// Disable click events on content wrap
-			$(contentSlide).find('div.pointer-events').css({'pointer-events':'none'});
-			$(contentSlide).find('header.main, header.sub').css({'left': '100%'});
-			$(contentSlide).css({'position':'fixed', /*'min-width':'480px',*/ 'top': previousScrollTop, 'bottom':'0', 'right':'0'});
-			/*Append left !important.  Necessary becuase jQuery CSS doesn't all it to be added. */
-			$(contentSlide).attr('style',$(contentSlide).attr('style')+'left: 100% !important' );
-			configObj.appendTo.show();
-			// Set the scroll top again for navigation slide. This will not affect content wrap since it's position is now fixed.
-			$(window).scrollTop(0);
-			// Create one reset display event on content slide
-			contentSlide.one('click', function(event) {
-				event.preventDefault ? event.preventDefault() : event.returnValue = false;
-				event.stopImmediatePropagation();
-				search.firstToggleClick = true;
-				BUNDLE.common.resetDisplay(this, configObj.appendTo, previousScrollTop); 
-				$('#'+configObj.resultsContainerId).parents('div.dataTables_wrapper').first().hide();
-			});
-		} else {
-			search.firstToggleClick = true;
-			BUNDLE.common.resetDisplay(contentSlide, configObj.appendTo, previousScrollTop);  
-			$('#'+configObj.resultsContainerId).parents('div.dataTables_wrapper').first().hide();
-		}
-	
-}
 
 // Define Table objects or list Object and initialize them.
 searchConfig ={
-	requestedForTableConfig:{
-		// type: "BridgeDataTable" or "BridgeList".  Determines default values to be used and behavior.
-		type: "BridgeDataTable",
-		// responsive: OPTIONAL Default for "BridgeDataTable" is true but can be over written.
-		//responsive: false,
-		bridgeConfig:{
-			model: "Person",
-			qualification_mapping: "By First Name or Last Name or Full Name",
-			//Params to be created and passed to the Bridge.  VALUE MUST BE JQUERY SELECTOR.
-			parameters: {'Full Name': '#requested_for input','First Name': '#requested_for input','Last Name': '#requested_for input'},
-			metadata: {"order": [encodeURIComponent('<%=attribute["Last Name"]%>:ASC')]}
-		},
-		processSingleResult: true,
-		//clearOnClick:false,  //this option prevents the table from clearing when clicked. Most applicable for console tables
-		// Properties in the data must match the attributes of the Bridge Request
-		data: {
-			"First Name":{
-				title:"FIRST",
-				className: "all",
-				setQstn:"ReqFor_First Name",
-			},
-			"Last Name":{
-				title:"Last",
-				className: "min-tablet",
-				callback:function(value){
-					console.log(value);
-				},
-				setQstn:"ReqFor_Last Name"
-			},
-			"Email":{
-				title:"EMAIL",
-				className: "min-phone",
-				setQstn:"ReqFor_Email"
-			},
-			"Login Id":{
-				title:"LOGIN",
-				className: "none",
-				setQstn:"ReqFor_Login ID"
-			},
-			"Work Phone Number":{
-				title:"PHONE",
-				className: "hidden",
-				setQstn:"ReqFor_Phone"
-			},
-			"Empty":{
-			  title:" ",
-			  className: "all",
-			  //Optional, This means we won't use this as an attibute in the bridge and it can be filled in with static content, like buttons 
-			  notdynamic: true  
-			}
-		},
-		//Where to append the table
-		// appendTo: $('div.search-slide'), // Not recommended to use jQuery object as it may not exist when evaluated.
-		// appendTo: 'div.search-slide',
-		appendTo: function(){return $('div.search-slide');},
-		// OPTIONAL: Create Table function or string to become jQuery obj
-		// table : '<table cellspacing="1", border="1", class="display test">',
-		// table : function(){return ($('<table>', {'cellspacing':'0', 'border':'0', 'class': 'test2 display'})).attr('id',this.resultsContainerId);},
-		//ID to give the table when creating it.
-		resultsContainerId: 'requestedForTable',
-		before: function(){ //before search
-			toggleUnclickable($('#requested_for'));
-		},
-		success: function (){
-			togglePanel(this);
-		},
-		success_empty: function(){
-			alert("No results Found");
-		},
-		error: function(){
-			toggleUnclickable($('#requested_for'));
-		},
-		complete: function(){
-			toggleUnclickable($('#requested_for'));
-		},
-		clickCallback: function(results){
-			$('#requested_for input').val(results["First Name"]+ ' ' + results["Last Name"]);
-			togglePanel(this);
-		},
-		createdRow: function ( row, data, index ) {
-		    //sample for notdynamic data
-		    //This type of button functionality is probably most applicable for console type tables
-		   $('td',row).eq(5).addClass("cursorPointer");
-			rowButtonHTML = '<button title="Edit Item" class="btn-edit" value="Edit"><i class="fa fa-pencil-square-o"></i></button><button title="Delete Item" class="btn-delete" value="Delete"><i class="fa fa-scissors"></i></button>';
-			$('td',row).eq(5).html(rowButtonHTML);
-			$('td',row).eq(5).click(function(e) {
-			//do something
-			});
-		},
-		fnFooterCallback: function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
-			console.log(aaData);
-		},
-		dom: 'Bfrtip',
-	},
-	contactTableConfig:{
-		type: "BridgeDataTable",
-		// responsive: OPTIONAL Default for "BridgeDataTable" is true but can be over written.
-		//responsive: false,
-		bridgeConfig:{
-			model: "Person",
-			qualification_mapping: "By First Name or Last Name or Full Name",
-			parameters: {'Full Name': '#contact input','First Name': '#contact input','Last Name': '#contact input'},
-
-		},
-		data: {
-			"First Name":{
-				title:"FIRST",
-				className: "",
-				setQstn:"Contact_First Name",
-			},
-			"Last Name":{
-				title:"Last",
-				className: "min-phone-l",
-				callback:function(value){
-					console.log(value);
-				},
-				setQstn:"Contact_Last Name"
-			},
-			"Email":{
-				title:"EMAIL",
-				className: "min-phone-l",
-				setQstn:"Contact_Email",
-			},
-			"Login Id":{
-				title:"ID",
-				className: "min-tablet",
-				setQstn:"Contact_Login ID",
-			},
-			"Work Phone Number":{
-				title:"PHONE",
-				className: "none",
-				setQstn:"Contact_Phone",
-			}
-		},
-		appendTo: $('div.search-slide'),
-		resultsContainerId: 'contactTable',
-		before: function(){ //before search
-			toggleUnclickable($('#contact'));
-		},
-		success: function (){
-			togglePanel(this);
-		},
-		success_empty: function(){
-			alert("No results Found");
-		},
-		error: function(){
-			toggleUnclickable($('#contact'));
-		},
-		complete: function(){
-			toggleUnclickable($('#contact'));
-		},
-		clickCallback: function(results){
-				$('#contact input').val(results["First Name"]+ ' ' + results["Last Name"]);
-				$('#contact_search a').find('i').removeClass('fa-spinner fa-pulse').addClass('fa-search');
-				togglePanel(this);
-		},
-		createdRow: function ( row, data, index ) {
-			// Add select class to Row.  The class is used to trigger selection of row.
-			//$(row).addClass('select');
-		},
-	},
-	defaultRequestedFor:{
-		runAtInitialization: true,
-		type: "BridgeGetSingle",
-		bridgeConfig:{
-			model: "Person",
-			qualification_mapping: "By Login Id",		
-			// May be string or function
-			//parameters: {'Login ID': clientManager.userName},
-			parameters: {'Login ID': function(){return clientManager.userName;}},
-		},
-		data: {
-			"First Name":{
-				setQstn:"ReqFor_First Name",
-			},
-			"Last Name":{
-				setQstn:"ReqFor_Last Name",
-
-			},
-			"Email":{
-				setQstn:"ReqFor_Email",
-			},
-			"Login Id":{
-				setQstn:"ReqFor_Login ID",
-			},
-			"Work Phone Number":{
-				setQstn:"ReqFor_Phone",
-			}
-		},
-		before: function(){ //before search
-		},
-		success: function (){
-		},
-		success_empty: function(){
-			alert("No results Found");
-		},
-		error: function(){
-		},
-		complete: function(){
-		},
-	},
-	defaultContact:{
-		runAtInitialization: true,
-		type: "BridgeGetSingle",
-		bridgeConfig:{
-			model: "Person",
-			qualification_mapping: "By Login Id",
-			//parameters: {'Login ID': clientManager.userName},
-			parameters: {'Login ID': function(){return clientManager.userName;}},
-		},
-		data: {
-			"First Name":{
-				setQstn:"Contact_First Name",
-			},
-			"Last Name":{
-				setQstn:"Contact_Last Name",
-			},
-			"Email":{
-				setQstn:"Contact_Email",
-			},
-			"Login Id":{
-				setQstn:"Contact_Login ID",
-			},
-			"Work Phone Number":{
-				setQstn:"Contact_Phone",
-			}
-		},
-		before: function(){ //before search
-		},
-		success: function (){
-		},
-		success_empty: function(){
-			alert("No results Found");
-		},
-		error: function(){
-		},
-		complete: function(){
-		},
-	},
 	listContact:{
+		// type: "BridgeDataTable", "BridgeList", "BridgeGetSingle", or "performSDRTable".  Determines default values to be used and behavior.
 		type: "BridgeList",
 		bridgeConfig:{
+			//bridge model listed here
 			model: "Person",
+			//bridge qualification. This model/qualification must be exposed on the items/forms where this search is used.
 			qualification_mapping: "By Full Name",
+			//Params to be created and passed to the Bridge.  VALUE MUST BE JQUERY SELECTOR if specified as a string.
+			//This allows you to select values out of any element on the page, question or just dom element.
+			//Otherwise, pass a function that returns the desired value. The function allows use of variables, etc.
+			//Below is an example of getting the value out of a text element on the page that is NOT a question, but
+			//has an id of list-contact
 			parameters: {'Full Name': '#list-contact input'},
-			attributes: ["First Name","Last Name","Email","Login Id","Work Phone Number"],
 				},
+		// Properties in the data must match the attributes of the Bridge Request or have a "notdynamic" option set to true. This would be on
+		// the same level as title and className
 		data: {
 			"First Name":{
-				title:"FIRST",
+			    //The title is in a separate div before the data with a class of title
+				title:"First",
+				//This is the menu label of the question to be set with the value from this column and row when a row is clicked.
 				setQstn:"List Contact First Name",
-				className: "",
+				//This is added as a class to the div for both the title and the data (see example list below)
+				className: "contactName",
 			},
 			"Last Name":{
-				title:"LAST",
+				title:"Last",
 				setQstn:"List Contact Last Name",
-				className: ""
+				className: "contactName"
 			},
 			"Email":{
-				title:"EMAIL",
+				title:"Email",
 				setQstn:"List Contact Email",
+				//callback is also a valid option for type: "BridgeDataTable", "BridgeList". It happens when a row/item is selected
 				callback:function(value){
 					console.log(value);
 				},
-				className: ""
+				className: "contactData"
 			},
 			"Login Id":{
-				title:"LOGIN",
+				title:"Login",
 				setQstn:"List Contact Login ID",
-				className: ""
+				className: "contactData"
 			},
 			"Work Phone Number":{
-				title:"PHONE",
+				title:"Phone",
 				setQstn:"List Contact Phone",
-				className: ""
+				className: "contactData"
 			},
 		},
+		//Where to append the table
 		appendTo: '#list-contact-results',
-		before: function(){
+		before: function(){ //before search
+			//A function, not included here, to make the search unavailable
 			toggleUnclickable($('#list-contact'));
 		},
-		success: function (){
+		success: function (){  //This occurs when results are found   
+		    //this shows/unhides the appendTo element with features on the event
 			this.appendTo.show("blind", "swing", 1000);
 		},
-		success_empty: function(){
+		success_empty: function(){  //This occurs when the search is successful, but no results are found
+			//an alert
 			alert("No results Found");
 		},
-		error: function(){
+		error: function(){ //This occurs if there is an error on the search 
+		    //make search available again (function not displayed here)
 			toggleUnclickable($('#list-contact'));
 		},
-		complete: function(){
+		complete: function(){ //This occurs when the build of the list is complete
+			//make search available again (function not displayed here)
 			toggleUnclickable($('#list-contact'));
 		},
-		clickCallback: function(results){
+		clickCallback: function(results){  //This is what happens on selection/click of a list item--in addition to the setQstn 
+				//put the name intothe list contact, someoneelse text input, hide list append to element.
 				$('#list-contact .someoneelse input').val(results["First Name"]+ ' ' + results["Last Name"]);
 				this.appendTo.hide("blind", "swing", 1000);
 		},
 	},
-	defaultListContact:{
-		runAtInitialization: true,
-		type: "BridgeGetSingle",
-		bridgeConfig:{
-			model: "Person",
-			qualification_mapping: "By Login Id",
-			parameters: {'Login ID': function(){return clientManager.userName;}},
-		},
-		data: {
-			"First Name":{
-				setQstn:"List Contact First Name",
-			},
-			"Last Name":{
-				setQstn:"List Contact Last Name",
-			}
-		},
-		before: function(){
-			toggleUnclickable($('#list-contact'));
-		},
-		success: function (){
-		},
-		success_empty: function(){
-			alert("No results Found");
-		},
-		error: function(){
-			toggleUnclickable($('#list-contact'));
-		},
-		complete: function(){
-			toggleUnclickable($('#list-contact'));
-		},
-	},
+//The above would generate a result like this:	
+//<div id="list-contact-results">
+//<ul id="resultList">
+//<li id="result">
+//<div class="title contactName">First</div>
+//<div>Allen</div>
+//<div class="title contactName">Last</div>
+//<div>Allbrook</div>
+//<div class="title contactData">Email</div>
+//<div>A.Allbrook@calbroservices.com</div>
+//<div class="title contactData">Login</div>
+//<div>Allen</div>
+//<div class="title contactData">Phone</div>
+//<div>1 212 555-5454 (11)</div>
+//</li>
+//</ul>
+//</div>
+
 	requestedForSDRTableConfig:{
-		//type: "BridgeDataTable" or "BridgeList".  Determines default values to be used and behavior.
+		// type: "BridgeDataTable", "BridgeList", "BridgeGetSingle", or "performSDRTable".  Determines default values to be used and behavior.
 		type: "performSDRTable",
+		//simple data request config
 		sdrConfig:{
+		    //ID of the simple data request
 			SDRId: 'KSHAA5V0HJEMVANZR2R0KM2F7LBICP',
+			//parameter(s) for the search. This example pulls a value out of an text element on the page.
+			//pulling one out of a question would look like return "lname="+KD.utils.Action.getQuestionValue("SDR Requested For");
 			params: 
-			/*"lname=Peterson",*/
+			//"lname=Peterson",
 			function(){
 				return "lname="+$('#SDR_requested_for input').val();
 			},
+			//Name of the simple data request
 			sdrName: 'CallLastNameSDR'
 		},
+		// processSingleResult does the same thing as the click callback would do if there is just one result
+		// found, rather than displaying the one row for the user to click on. For console tables or tables you
+		// want to always display, even if there is just one record, this should be set to false.
 		processSingleResult: true,
+		//data elements must be elements/fields in the simple data request
 		data: {
 			"AR Login":{
-				title:"LOGIN ID",
+				//This will be the title of the column or the label of the element, depending on the search type
+				title:"Login ID",
+				//This will be the class given to the column/cell/div as appropriate for the search type
 				className: "all",
+				//This is the menu label of the question to be set with the value from this column and row when a row is clicked.
 				setQstn:"SDR_ReqFor_Login ID"
 			},
 			"First Name":{
-				title:"FIRST",
-				className: "min-tablet",
+				title:"First Name",
+				//For responsive datatables, a class of all always displays, none is in the subrow data (responsive data), and never is always hidden
+				//For non-responsive datatables, a class of hidden will hide the column. see https://datatables.net/extensions/responsive/classes
+				//for more details and options
+				className: "all",
 				setQstn:"SDR_ReqFor_First Name"
 			},
 			"Last Name":{
-				title:"LAST",
+				title:"Last Name",
 				className: "min-tablet",
 				setQstn:"SDR_ReqFor_Last Name"
 			},
 			"Supervisor Name":{
-				title:"MANAGER NAME",
-				className: "none",
-				setQstn:""
+				title:"Manager Name",
+				className: "none"
 			},
 		},
-		//Where to append the table
+		//Where to append the table. This element should exist on the page
+		//If a string is returned it will be processed as jQuery. Otherwise
+		//return the element in a function.
 		//appendTo: '#SDR_requested_for',
 		appendTo: function(){return $('#SDR_requested_for');},
-		//ID to give the table when creating it.
+		//a string of the id to give the created table. This should not exist on the page.
 		resultsContainerId: 'SDRRequestedForTable',
-		before: function(){
-		},
-		success: function (){
-		},
-		success_empty: function(){
+        before: function(){ //before search         
+        },
+        success: function (){  //This occurs when results are found     
+        },
+        success_empty: function(){  //This occurs when the search is successful, but no results are found    
 			alert("No results Found");
-		},
-		error: function(){
-		},
-		complete: function(){
-		},
-		createdRow: function ( row, data, index ) {
-		},
-		clickCallback: function(results){
+        },
+        error: function(){  //This occurs if there is an error on the search      
+        },
+        complete: function(){   //This occurs when the build of the table is complete  
+        },
+        clickCallback: function(results){  //This occurs when a row is clicked
+		}
+		createdRow: function ( row, data, index ) {  //This is done when the row is being built
 		},
 	}
 };
