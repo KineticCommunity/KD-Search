@@ -169,6 +169,8 @@ SearchConfig ={
 			//and KD.utils.Action.getQuestionValue) but getting a value out of a drop down list question is slightly 
 			//different '[label="QuestionLabelHere"] select' 
             parameters: {'Last Name': '[label="Search By Last Name"] input'},
+			//bridge metadata settings can be passed through
+			metadata: {"order": [encodeURIComponent('<%=attribute["Last Name"]%>:ASC')] },
         },
 		// processSingleResult does the same thing as the click callback would do if there is just one result
 		// found, rather than displaying the one row for the user to click on. For console tables or tables you
