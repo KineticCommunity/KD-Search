@@ -590,6 +590,11 @@ KD Search RE Edition
 		if ( $.fn.DataTable.isDataTable( '#'+configObj.resultsContainerId ) ) {
 			$('#'+configObj.resultsContainerId).DataTable().destroy(true);
 		}
+		if(configObj.removeDups == false || typeof configObj.removeDups == "undefined"){
+			//no nothing--this defaults to false
+		} else { 
+			configObj.dataArray = removeDuplicates(configObj.dataArray);
+		}
 		configObj.tableObj = $('#'+configObj.resultsContainerId).DataTable( configObj );
 		configObj.tableObj.rows.add(configObj.dataArray).draw();
 		// Bind Click Event based on where the select attribute extists ie:<tr> or <td>
@@ -613,6 +618,28 @@ KD Search RE Edition
 			}
 		});
 	}
+	
+	//These next two functions will compare rows and remove rows that are identical
+	//this includes hidden columns and also column order. If the rows are not exactly identical, they will stay
+	 function removeDuplicates(arr) {
+        newArr = new Array();
+        for (i = 0; i < arr.length; i++) {
+            if (!duplValuescheck(newArr, arr[i])) {
+                newArr.length += 1;
+                newArr[newArr.length - 1] = arr[i];
+            }
+        }
+        return newArr;
+    }
+
+    function duplValuescheck(arr, e) {
+        for (j = 0; j < arr.length; j++) 
+		{ oj = JSON.stringify(arr[j]);
+	      oe = JSON.stringify(e);
+			if (oj == oe) return true;
+		}
+        return false;
+    }
 	
 	/****************************************************************************
 								PUBlIC FUNCTIONS							   

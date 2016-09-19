@@ -13,6 +13,9 @@ submissionSearch = {
 		// destroyed when the first row click occurs. This is often desirable for search tables, but undesirable 
 		// for console tables.
         clearOnClick: false,
+		// removeDups: OPTIONAL Default is FALSE. Will remove identical rows. This includes hidden columns and column order matters
+		// the columns will only be removed if this is set to true and the rows are exactly identical.
+		//removeDups: true,  
 		// These are examples of datatable configuration that is simply passed through to datatables.
         "pageLength": 15,
         "order":[[1,"desc"]],   //order by KSR - note this is order of the data returned, not order of the data during the bridge search
