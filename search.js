@@ -1,9 +1,8 @@
 /**
 KD Search RE Edition
 
-**Completed 1/29/2016 Brian Peterson
-
-- Changed how the list elements are created to enable use in IE
+**Completed 1/6/2017 Brian Peterson
+    Added conditional use of BUNDLE.config.commonTemplateId to handle conditions when BUNDLE doesn't
 
 **TODO
 
@@ -13,10 +12,10 @@ KD Search RE Edition
     KDSearch = typeof KDSearch == "undefined" ? {} : KDSearch;
     // Create a scoped alias to simplify references
     var search = KDSearch;
-   
+
     /**
      * Define default properties for the Search configurations
-     * Reduces need to include all properties in a search configuration.  
+     * Reduces need to include all properties in a search configuration.
      * Each Search config my overide these values by including a value of its own.
      * execute: {Function} Function which will execute the search
      * Other properties are used by Datatables.net or its Responsive Plugin.
@@ -26,7 +25,7 @@ KD Search RE Edition
         execute: performBridgeRequestDataTable,
         resultsContainer : '<table cellspacing="0", border="0", class="display">',
         bridgeConfig:{
-            templateId: BUNDLE.config.commonTemplateId
+          templateId: typeof BUNDLE === "undefined" ? "" : BUNDLE.config.commonTemplateId
         },
         // Properties specific to DataTables
         paging: true,
@@ -43,15 +42,15 @@ KD Search RE Edition
     var defaultsBridgeList = {
         execute: performBridgeRequestList,
     };
-    
+
     /* Define default properties for defaultsBridgeGetSingle object. */
     var defaultsBridgeGetSingle = {
         execute: performBridgeRequestSingle,
         bridgeConfig:{
-            templateId: BUNDLE.config.commonTemplateId
+          templateId: typeof BUNDLE === "undefined" ? "" : BUNDLE.config.commonTemplateId
         },
     };
-    
+
     /* Define default properties for defaultSDRTable object. */
     var defaultSDRTable = {
         execute: performSDRTable,
@@ -64,7 +63,7 @@ KD Search RE Edition
         },
     };
 
-    
+
     /**
      * Executes the search for the configured search object.
      * @param {Obj} Search configuration object.
@@ -75,20 +74,20 @@ KD Search RE Edition
         configObj = search.initialize(configObj);
         if(configObj.execute){
             configObj.execute();
-        }   
+        }
     };
 
     /**
-     * Initialize the searchConfig Object 
+     * Initialize the searchConfig Object
      * @param {Object} Configuration object(s)
      */
     search.initialize = function(obj){
-        // Initialize each the configurations based on the type property 
+        // Initialize each the configurations based on the type property
             if(obj.type=="BridgeDataTable"){
                 // Entend defaults into the configuration
                 obj=$.extend( {}, defaultsBridgeDataTable, obj );
                 // Create a table element for Datatables and add to DOM
-                obj=initializeResultsContainer(obj);  
+                obj=initializeResultsContainer(obj);
             }
             else if(obj.type=="BridgeList"){
                 // Entend defaults into the configuration
@@ -99,16 +98,16 @@ KD Search RE Edition
             else if(obj.type=="BridgeGetSingle"){
                 // Entend defaults into the configuration
                 obj=$.extend( {}, defaultsBridgeGetSingle, obj );
-            } 
+            }
             else if(obj.type=="performSDRTable"){
                 // Entend defaults into the configuration
                 obj=$.extend( {}, defaultSDRTable, obj );
                 // Create a table element for Datatables and add to DOM
-                obj=initializeResultsContainer(obj);  
+                obj=initializeResultsContainer(obj);
             }
             return obj
     }
-    
+
     /**
      * Used to execute objects configured as defaultBridgeDataTable
      */
@@ -132,7 +131,7 @@ KD Search RE Edition
             });
         }
 
-        
+
         var templateId = (configObj.bridgeConfig.templateId && configObj.bridgeConfig.templateId!="null") ? configObj.bridgeConfig.templateId : clientManager.templateId;
         //create the connector necessary to connect to the bridge
         var connector = new KD.bridges.BridgeConnector({templateId: templateId});
@@ -168,7 +167,7 @@ KD Search RE Edition
                         if(configObj.clickCallback){configObj.clickCallback(resultsObj);}
                     }
                     // More than 1 record returned
-                    else if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult ||configObj.records.length > 1){    
+                    else if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult ||configObj.records.length > 1){
                         //Iterate through row results to retrieve data
                         $.each(configObj.records, function(i,record){
                             var obj = {};
@@ -215,8 +214,8 @@ KD Search RE Edition
                 if(configObj.error){configObj.error();}
                 if(configObj.complete){configObj.complete();}
             }
-        });                                                     
-    }   
+        });
+    }
 
     /**
      * Used to execute objects configured as performBridgeRequestSingle
@@ -331,7 +330,7 @@ KD Search RE Edition
                         setValuesFromResults(configObj.data,  configObj.records[0].attributes);
                     }
                     // More than 1 record returned
-                    else if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult ||configObj.records.length > 1){    
+                    else if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult ||configObj.records.length > 1){
                         this.$resultsList = $('<ul/>').attr('id','resultList');
                         //Iterate through row results to retrieve data
                         $.each(configObj.records, function(i,record){
@@ -356,7 +355,7 @@ KD Search RE Edition
                                     } else {
                                         //var attributeValue = record.attributes[attribute];
                                         var $value = $('<div/>').addClass(attributeObject['className']).html(attributeValue);
-                                        self.$singleResult.append($value); 
+                                        self.$singleResult.append($value);
                                         self.$singleResult.data(attribute,record.attributes[attribute])
                                     }
                                 }
@@ -372,19 +371,19 @@ KD Search RE Edition
                             }
                         });
                     }
-                }       
+                }
                 else{
                     if(configObj.success_empty){configObj.success_empty();}
                 }
-                if(configObj.complete){configObj.complete();} 
+                if(configObj.complete){configObj.complete();}
             },
             error: function(response){
                 if(configObj.error){configObj.error();}
                 if(configObj.complete){configObj.complete();}
             }
-        }); 
+        });
     }
-    
+
     /**
      * Used to execute objects configured as performSDRTable
      */
@@ -401,7 +400,7 @@ KD Search RE Edition
         else if(typeof configObj.sdrConfig.params == "string"){
             var params = configObj.sdrConfig.params;
         }
-        //    Define a callback that will call the custom populateUserTable function on success, or alert on failure. 
+        //    Define a callback that will call the custom populateUserTable function on success, or alert on failure.
         var connection=new KD.utils.Callback(function(response){
             configObj.dataArray = [];
             //Retrieve Records
@@ -410,7 +409,7 @@ KD Search RE Edition
             // Execute success callback
             if(configObj.success){configObj.success();}
             // More than 1 record returned
-                if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult || (configObj.records.length > 1 && configObj.records != null)){    
+                if(typeof configObj.processSingleResult == "undefined" || !configObj.processSingleResult || (configObj.records.length > 1 && configObj.records != null)){
                     //Loop through row results to retrieve data
                     $.each(configObj.records, function(i,record){
                         var obj = {};
@@ -479,21 +478,21 @@ KD Search RE Edition
         },function(response){
             if(configObj.complete){configObj.complete();}
             if(configObj.error){configObj.error();}
-        }); 
-        // Make an Asynchronous SDR request. 
+        });
+        // Make an Asynchronous SDR request.
         KD.utils.Action.makeAsyncRequest(sdrName, SDRId, connection, params, '', false);
-    } 
-    
+    }
+
     /**
-     * Code in kd_client.js is preventing the backspace from working on $('.dataTables_filter input'). stopPropigation allows backspace to work.  
+     * Code in kd_client.js is preventing the backspace from working on $('.dataTables_filter input'). stopPropigation allows backspace to work.
      */
     $('body').on('keydown', '.dataTables_filter input', function( event ) {
       event.stopPropagation();
     });
-    
+
 
     /****************************************************************************
-                                PRIVATE HELPERS / SHARED FUNCTIONS                             
+                                PRIVATE HELPERS / SHARED FUNCTIONS
     ****************************************************************************/
 
 
@@ -516,7 +515,7 @@ KD Search RE Edition
      * Returns Search Object
      * Creates resultsContainer and adds it to DOM based on Search Config
      * @param {Object} Search Object
-     */ 
+     */
     function initializeResultsContainer(obj){
         // Create resultsContainer
         obj.resultsContainer = evaluteObjType(obj.resultsContainer).attr('id',obj.resultsContainerId);
@@ -524,9 +523,9 @@ KD Search RE Edition
         obj.appendTo = evaluteObjType(obj.appendTo).append(obj.resultsContainer);
         return obj;
     }
-    
+
     /**
-     * Returns object 
+     * Returns object
      * @param {Object} table
      */
     function evaluteObjType(obj){
@@ -544,11 +543,11 @@ KD Search RE Edition
     }
 
     /**
-     * Returns String 
+     * Returns String
      * @param {String, Function or jQuery Selector} table
      */
     function evaluateParameter(param){
-        if(typeof param == "string" && $(param).length>0){ // if jQuery Selector 
+        if(typeof param == "string" && $(param).length>0){ // if jQuery Selector
             param = $(param).val();
         }
         else if(typeof param == "string"){ // if String
@@ -563,10 +562,10 @@ KD Search RE Edition
     /**
      * Returns object containing data from row
      * @param {Object} table
-     * @param {Object} row 
+     * @param {Object} row
      */
     function dataTableRowToObj(table, row){
-        var selectedRow = $(row).closest('tr');     
+        var selectedRow = $(row).closest('tr');
         return table.row(selectedRow).data();
     }
 
@@ -575,13 +574,13 @@ KD Search RE Edition
     * @param {Object} Search Object to convert
     */
     function convertDataToColumns(obj){
-        obj.columns = [];       
+        obj.columns = [];
         $.each(obj.data, function(attribute, attributeObject){
             attributeObject["data"] = attribute;
             obj.columns.push(attributeObject)
         });
     }
-    
+
     /**
     * Create a TableTable using a Search Object
     * @param {Object} Search Object used to create the DataTable
@@ -602,7 +601,7 @@ KD Search RE Edition
                 if(row.hasClass('child')){
                     row = row.prev('tr.parent')
                 }
-                // Convert selected row into a Results Obj 
+                // Convert selected row into a Results Obj
                 var resultsObj = dataTableRowToObj(configObj.tableObj, row);
                 // Set results based on Search config
                 setValuesFromResults(configObj.data, resultsObj);
@@ -614,11 +613,11 @@ KD Search RE Edition
             }
         });
     }
-    
+
     /****************************************************************************
-                                PUBlIC FUNCTIONS                               
+                                PUBlIC FUNCTIONS
     ****************************************************************************/
-    
+
     /**
      * Returns string with uppercase first letter
      * @param {String} Value to be give uppercase letter
