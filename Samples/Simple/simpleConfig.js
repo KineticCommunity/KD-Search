@@ -21,7 +21,7 @@
         data: {
             "First Name":{
                 // Table or List Title to display
-                title:"FIRST NAME",
+                title:"FIRST",
                 // CSS Class to apply to results
                 className: "all",
                 // Question to be set upon value selection
