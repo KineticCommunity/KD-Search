@@ -2,7 +2,7 @@
 KD Search RE Edition
 
 **Completed 1/6/2017 Brian Peterson
-    Added conditional use of BUNDLE.config.commonTemplateId to handle conditions when BUNDLE doesn't
+    Added conditional use of BUNDLE.config.commonTemplateId to handle conditions when BUNDLE doesn't exit.
 
 **TODO
 
@@ -37,7 +37,7 @@ KD Search RE Edition
             }
         },
     };
-    
+
     /* Define default properties for defaultsBridgeList object. */
     var defaultsBridgeList = {
         execute: performBridgeRequestList,
